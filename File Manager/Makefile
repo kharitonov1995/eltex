@@ -1,7 +1,7 @@
 IDIR = include
 LDIR = lib
 SDIR = src
-LIBS = -lncurses
+LIBS = -lncurses -lmenu
 
 CC = gcc
 

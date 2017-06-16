@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#pragma once
+
 typedef struct _list {
 	char *data;
 	struct _list *next;
@@ -8,3 +10,5 @@ typedef struct _list {
 List *initList(char*);
 List *addElem(char*, List*);
 List *delElem(List*, List*);
+int sizeList(List*);
+void clearList(List*);

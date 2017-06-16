@@ -11,20 +11,27 @@ void initWindow(panel *p) {
 	wrefresh(p->window);
 }
 
-int getFilesCurDir(panel *p) {
+List *getFilesCurDir(panel *p) {
+	List *head = NULL, *list = NULL;
+	
 	if (getcwd(p->path, sizeof(p->path)) != NULL)
-		wprintw(p->window, p->path); 
+		wprintw(p->window, p->path);
 		
 	p->dir = opendir(p->path);
 	if (p->dir != NULL) {
-		while ((p->ent = readdir(p->dir)) != NULL)
-			wprintw(p->window, p->ent->d_name);
+		while ((p->ent = readdir(p->dir)) != NULL) {
+			if (list == NULL) {
+				list = initList(p->ent->d_name);
+				head = list;
+			} else
+				list = addElem(p->ent->d_name, list);
+		}
 		closedir(p->dir);
 	} else {
 		perror("");
-		return EXIT_FAILURE;
+		return NULL;
 	}
 	
 	wrefresh(p->window);
-	return 0;
+	return head;
 }

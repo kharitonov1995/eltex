@@ -34,3 +34,30 @@ List *delElem(List *list, List *root) {
 	
 	return temp;
 }
+
+int sizeList(List *head) {
+	List *list;
+	int size = 0;
+	
+	if (head->next == NULL)
+		return 1;
+	else {
+		list = head;
+		do {
+			size++;
+			list = list->next;
+		} while (list != NULL);
+		return size;
+	}
+}
+
+void clearList(List *head) {
+	List *current = head;
+	List *next;
+ 
+	while (current != NULL) {
+		next = current->next;
+		free(current);
+		current = next;
+	}
+}

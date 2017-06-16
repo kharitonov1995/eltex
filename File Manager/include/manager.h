@@ -8,7 +8,7 @@
 #include <menu.h>
 #include <termios.h>
 
-#include "list.h"
+#include "../include/list.h"
 
 const int NCOLS = 10, NLINES = 10, x = 1, y = 1;
 
@@ -22,4 +22,4 @@ typedef struct st {
 
 void initBox(panel*);
 void initWindow(panel*);
-int getFilesCurDir(panel*);
+List *getFilesCurDir(panel*);
