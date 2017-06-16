@@ -1,21 +1,22 @@
 #include "../include/manager.h"
 
 void initBox(panel *p) {
-	p->box = newwin(NLINES + 10, NCOLS + 10, x, y);
-	box(p->box, '|', '-');
+	p->box = newwin(NCOLS + 10, NLINES + 20, x, y);
+	box(p->box, 0, 0);
+	mvprintw(NLINES + 9, x + 1, "F1 to exit");
 	wrefresh(p->box);
 }
 
 void initWindow(panel *p) {
-	p->window = derwin(p->box, NLINES + 7, NCOLS + 7, x + 2, y + 1);
-	wrefresh(p->window);
+	p->window = derwin(p->box, NCOLS + 5, NLINES + 15, x + 2, y + 1);
+	box(p->window, 0, 0);
 }
 
 List *getFilesCurDir(panel *p) {
 	List *head = NULL, *list = NULL;
 	
 	if (getcwd(p->path, sizeof(p->path)) != NULL)
-		wprintw(p->window, p->path);
+		//wprintw(p->box, p->path);
 		
 	p->dir = opendir(p->path);
 	if (p->dir != NULL) {
@@ -28,10 +29,8 @@ List *getFilesCurDir(panel *p) {
 		}
 		closedir(p->dir);
 	} else {
-		perror("");
 		return NULL;
 	}
 	
-	wrefresh(p->window);
 	return head;
 }

@@ -5,7 +5,7 @@ LIBS = -lncurses -lmenu
 
 CC = gcc
 
-objects = main.o manager.o
+objects = main.o manager.o list.o
 SUBDIRS = $(LDIR) $(SDIR)
 
 vpath %.c $(SDIR) : $(LDIR)
