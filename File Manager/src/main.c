@@ -19,23 +19,24 @@ int main() {
 	signal(SIGWINCH, sigWinch);
 	cbreak();
 	noecho();
-	
+	curs_set(0);
 	initBox(&panels[0]);
 	initWindow(&panels[0]);
+	keypad(panels[0].window, TRUE);
 	
 	head = getFilesCurDir(&panels[0]);
 	sizeL = sizeList(head);
+	printf("\n");
 	items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
 	for(i = 0, list = head; list != NULL; i++, list = list->next) {
-		items[i] = new_item("file", list->data);
+		items[i] = new_item(list->data, "file");
 	}
-	
-	keypad(panels[0].window, TRUE);
 	
 	menu = new_menu(items);
 	set_menu_win(menu, panels[0].box);
     set_menu_sub(menu, panels[0].window);
 	post_menu(menu);
+	wrefresh(panels[0].box);
 	
 	while((ch = wgetch(panels[0].window)) != KEY_F(1)) {
 		switch(ch) {
@@ -45,7 +46,15 @@ int main() {
 			case KEY_UP:
 				menu_driver(menu, REQ_UP_ITEM);
 				break;
+			case 10:
+				clrtoeol();
+				mvwprintw(panels[0].box, y, x, "Item selected is : %s", 
+						item_name(current_item(menu)));
+				pos_menu_cursor(menu);
+				wrefresh(panels[0].box);
+				break;
 		}
+		wrefresh(panels[0].window);
 	}
 	
 	unpost_menu(menu);
