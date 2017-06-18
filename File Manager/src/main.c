@@ -1,4 +1,5 @@
 #include "../lib/manager.c"
+#include "../lib/list.c"
 
 void sigWinch(int signo) {
 	struct winsize size;
@@ -8,34 +9,67 @@ void sigWinch(int signo) {
 
 int main() {
 	panel panels[2];
+	ITEM **items;
+	MENU *menu;
+	List *head = NULL, *list = NULL;
+	char tempPath[255];
+	int sizeL = 0, i;
+	int ch;
 	
 	initscr();
 	signal(SIGWINCH, sigWinch);
 	cbreak();
 	noecho();
-	refresh();
+	curs_set(0);
 	initBox(&panels[0]);
 	initWindow(&panels[0]);
-	getch();
+	keypad(panels[0].window, TRUE);
+	
+	head = getFilesCurDir(&panels[0]);
+	sizeL = sizeList(head);
+	printf("\n");
+	items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
+	for(i = 0, list = head; list != NULL; i++, list = list->next) {
+		sprintf(tempPath, "%s%c%s", panels[0].path, '/',  list->data);
+		if (isDirectory(tempPath)) {
+			items[i] = new_item(list->data, _DIR);
+		} else {
+			items[i] = new_item(list->data, _FILE);
+		}
+		memset(tempPath, '\0', sizeof(tempPath));
+	}
+	
+	menu = new_menu(items);
+	set_menu_win(menu, panels[0].box);
+    set_menu_sub(menu, panels[0].window);
+	post_menu(menu);
+	wrefresh(panels[0].box);
+	
+	while((ch = wgetch(panels[0].window)) != KEY_F(1)) {
+		switch(ch) {
+			case KEY_DOWN:
+				menu_driver(menu, REQ_DOWN_ITEM);
+				break;
+			case KEY_UP:
+				menu_driver(menu, REQ_UP_ITEM);
+				break;
+			case 10:
+				clrtoeol();
+				mvwprintw(panels[0].box, y, x, "Item selected is : %s", 
+						item_name(current_item(menu)));
+				pos_menu_cursor(menu);
+				wrefresh(panels[0].box);
+				break;
+		}
+		wrefresh(panels[0].window);
+	}
+	
+	unpost_menu(menu);
+	free_menu(menu);
+	for(i = 0, list = head; list != NULL; i++, list = list->next)
+		free_item(items[i]);
+	clearList(head);
 	endwin();
 	
 	return 0;
 }
-
-
-	/*DIR *dir;
-	struct dirent *ent;
-	char currentDir[128];
-	
-	if (getcwd(currentDir, sizeof(currentDir)) != NULL)
-		printf("%s\n", currentDir); 
-	
-	if ((dir = opendir (currentDir)) != NULL) {
-		while ((ent = readdir (dir)) != NULL) {
-			printf ("%s\n", ent->d_name);
-		}
-		closedir (dir);
-		} else {
-			perror ("");
-		return EXIT_FAILURE;
-		}*/
