@@ -9,11 +9,7 @@ void sigWinch(int signo) {
 
 int main() {
 	panel panels[2];
-	ITEM **items;
-	MENU *menu;
-	List *head = NULL, *list = NULL;
-	char tempPath[255];
-	int sizeL = 0, i;
+	List *head = NULL;
 	int ch;
 	
 	initscr();
@@ -26,48 +22,37 @@ int main() {
 	keypad(panels[0].window, TRUE);
 	
 	head = getFilesCurDir(&panels[0]);
-	sizeL = sizeList(head);
-	printf("\n");
-	items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
-	for(i = 0, list = head; list != NULL; i++, list = list->next) {
-		sprintf(tempPath, "%s%c%s", panels[0].path, '/',  list->data);
-		if (isDirectory(tempPath)) {
-			items[i] = new_item(list->data, _DIR);
-		} else {
-			items[i] = new_item(list->data, _FILE);
-		}
-		memset(tempPath, '\0', sizeof(tempPath));
-	}
-	
-	menu = new_menu(items);
-	set_menu_win(menu, panels[0].box);
-    set_menu_sub(menu, panels[0].window);
-	post_menu(menu);
+	initMenu(&panels[0], head);
 	wrefresh(panels[0].box);
 	
 	while((ch = wgetch(panels[0].window)) != KEY_F(1)) {
 		switch(ch) {
 			case KEY_DOWN:
-				menu_driver(menu, REQ_DOWN_ITEM);
+				menu_driver(panels[0].menu, REQ_DOWN_ITEM);
 				break;
 			case KEY_UP:
-				menu_driver(menu, REQ_UP_ITEM);
+				menu_driver(panels[0].menu, REQ_UP_ITEM);
 				break;
 			case 10:
+				/*mvwprintw(panels[0].box, y, x, "Item selected is : %s", 
+						item_name(current_item(panels[0].menu)));
+					*/
 				clrtoeol();
-				mvwprintw(panels[0].box, y, x, "Item selected is : %s", 
-						item_name(current_item(menu)));
-				pos_menu_cursor(menu);
-				wrefresh(panels[0].box);
+				if (strcmp(item_description(current_item(panels[0].menu)), _DIR) == 0) {
+					changeDirectory((char*) &panels[0].path, 
+						(char*) item_name(current_item(panels[0].menu)));
+					
+					delMenu(&panels[0], head);
+					head = getFilesCurDir(&panels[0]);
+					initMenu(&panels[0], head);
+				}
+								
+				//wrefresh(panels[0].box);
 				break;
 		}
 		wrefresh(panels[0].window);
 	}
 	
-	unpost_menu(menu);
-	free_menu(menu);
-	for(i = 0, list = head; list != NULL; i++, list = list->next)
-		free_item(items[i]);
 	clearList(head);
 	endwin();
 	

@@ -10,5 +10,6 @@ typedef struct _list {
 List *initList(char*);
 List *addElem(char*, List*);
 List *delElem(List*, List*);
+List *swap(List*, List*, List*);
 int sizeList(List*);
 void clearList(List*);
