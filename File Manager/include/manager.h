@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <curses.h>
@@ -11,9 +14,10 @@
 #include "../include/list.h"
 
 const int NCOLS = 10, NLINES = 10, x = 1, y = 1;
+const char _DIR[] = "dir", _FILE[] = "file";
 
 typedef struct st {
-	char path[64];
+	char path[255];
 	WINDOW *window;
 	WINDOW *box;
 	DIR *dir;
@@ -23,3 +27,4 @@ typedef struct st {
 void initBox(panel*);
 void initWindow(panel*);
 List *getFilesCurDir(panel*);
+int isDirectory(char *);

@@ -12,6 +12,7 @@ int main() {
 	ITEM **items;
 	MENU *menu;
 	List *head = NULL, *list = NULL;
+	char tempPath[255];
 	int sizeL = 0, i;
 	int ch;
 	
@@ -29,7 +30,13 @@ int main() {
 	printf("\n");
 	items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
 	for(i = 0, list = head; list != NULL; i++, list = list->next) {
-		items[i] = new_item(list->data, "file");
+		sprintf(tempPath, "%s%c%s", panels[0].path, '/',  list->data);
+		if (isDirectory(tempPath)) {
+			items[i] = new_item(list->data, _DIR);
+		} else {
+			items[i] = new_item(list->data, _FILE);
+		}
+		memset(tempPath, '\0', sizeof(tempPath));
 	}
 	
 	menu = new_menu(items);

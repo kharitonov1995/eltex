@@ -4,7 +4,6 @@ void initBox(panel *p) {
 	p->box = newwin(NLINES + 10, NCOLS+ 20, x, y);
 	box(p->box, 0, 0);
 	mvprintw(NLINES + 9, x + 1, "F1 to exit");
-	
 }
 
 void initWindow(panel *p) {
@@ -20,6 +19,7 @@ List *getFilesCurDir(panel *p) {
 	p->dir = opendir(p->path);
 	if (p->dir != NULL) {
 		while ((p->ent = readdir(p->dir)) != NULL) {
+			if (strcmp(p->ent->d_name, ".") == 0) continue;
 			if (list == NULL) {
 				list = initList(p->ent->d_name);
 				head = list;
@@ -32,4 +32,13 @@ List *getFilesCurDir(panel *p) {
 	}
 	
 	return head;
+}
+
+int isDirectory(char *path) {
+	struct stat statBuf;
+	
+	if (stat(path, &statBuf) != 0)
+		return -1;
+		
+	return S_ISDIR(statBuf.st_mode);
 }
