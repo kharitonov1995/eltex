@@ -11,6 +11,7 @@ int main() {
 	panel panels[2];
 	List *head = NULL;
 	int ch;
+	char *itemName;
 	
 	initscr();
 	signal(SIGWINCH, sigWinch);
@@ -38,21 +39,22 @@ int main() {
 						item_name(current_item(panels[0].menu)));
 					*/
 				clrtoeol();
+				itemName = (char*) item_name(current_item(panels[0].menu));
 				if (strcmp(item_description(current_item(panels[0].menu)), _DIR) == 0) {
-					changeDirectory((char*) &panels[0].path, 
-						(char*) item_name(current_item(panels[0].menu)));
+					changeDirectory((char*) &panels[0].path, itemName);
 					
 					delMenu(&panels[0], head);
 					head = getFilesCurDir(&panels[0]);
 					initMenu(&panels[0], head);
+				} else if (strcmp(item_description(current_item(panels[0].menu)), _FILE) == 0) {
+					execFile((char*) &panels[0].path, itemName);
 				}
-								
-				//wrefresh(panels[0].box);
 				break;
 		}
 		wrefresh(panels[0].window);
 	}
 	
+	delMenu(&panels[0], head);
 	clearList(head);
 	endwin();
 	

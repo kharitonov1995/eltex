@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include <curses.h>
 #include <menu.h>
@@ -31,5 +32,6 @@ void initWindow(panel*);
 void initMenu(panel*, List*);
 void delMenu(panel*, List*);
 void changeDirectory(char*, char*);
+void execFile(char*, char*);//открытие только текстовых файлов
 List *getFilesCurDir(panel*);
 int isDirectory(char *);

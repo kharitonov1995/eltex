@@ -70,6 +70,23 @@ List *getFilesCurDir(panel *p) {
 	return head;
 }
 
+void execFile(char *path, char *fileName) {
+	pid_t pid;
+	int status;
+	const char *prog = "/bin/nano";
+	char fullPath[PATH_MAX];
+	static char *argc[] = {"nano", "", NULL};
+	
+	sprintf(fullPath, "%s%c%s", path, '/', fileName);
+	argc[1] = fullPath;
+	
+	pid = fork();
+	if (pid == 0) {
+		execv(prog, argc);
+	}
+	wait(&status);
+}
+
 void changeDirectory(char *curPath, char *distDirectory) {
 	sprintf(curPath, "%s%c%s", curPath, '/', distDirectory);
 	chdir(curPath);
