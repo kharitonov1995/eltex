@@ -1,7 +1,10 @@
 CFLAGS = -O2 -Wall -pedantic -ansi
-LIBS = -lncurses
+LFLAGS = -lncurses
 
 vpath %.h ../include/
 
 main.o: main.c manager.h
-		gcc -c $(CFLAGS) $< $(LIBS)
+		gcc -c $< $(CFLAGS) $(LFLAGS)
+
+clean:
+		rm -rf *.o

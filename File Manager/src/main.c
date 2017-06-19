@@ -7,6 +7,8 @@ void sigWinch(int signo) {
 	resizeterm(size.ws_row, size.ws_col);
 }
 */
+
+/*F1 to exit*/
 int main() {
 	panel panels[2];
 	List *head = NULL;
@@ -14,6 +16,7 @@ int main() {
 	int ch;
 	char *itemName;
 	
+	setlocale(LC_ALL, "rus");
 	initCurses();
 	initWindow(NROWS, NCOLS, x + 1, y + 1, NULL, &panels[0]); 
 	

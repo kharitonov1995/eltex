@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <locale.h>
 
 #include <curses.h>
 #include <menu.h>

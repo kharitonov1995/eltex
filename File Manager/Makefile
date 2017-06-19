@@ -1,7 +1,7 @@
 IDIR = include
 LDIR = lib
 SDIR = src
-LIBS = -lncurses -lmenu
+LFLAGS = -lncurses -lmenu
 CFLAGS = -O2 -Wall -pedantic -ansi
 CC = gcc
 
@@ -13,7 +13,7 @@ vpath %.o $(SDIR) : $(LDIR)
 vpath %.h $(IDIR)
 
 all: $(objects)
-		$(CC) -o manager $< $(CFLAGS) $(LIBS) 
+		$(CC) -o manager $< $(CFLAGS) $(LFLAGS) 
 
 .PHONY: prepare $(SUBDIRS)
 prepare: $(SUBDIRS)
@@ -23,3 +23,5 @@ $(SUBDIRS):
 		
 $(SDIR):$(LDIR)
 
+clean:
+		rm -rf manager *.o

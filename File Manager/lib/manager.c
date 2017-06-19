@@ -38,7 +38,7 @@ void initMenu(panel *p, List *head) {
 	
 	p->menu = new_menu(p->items);
 	set_menu_win(p->menu, p->box);
-    set_menu_sub(p->menu, p->window);
+	set_menu_sub(p->menu, p->window);
 	post_menu(p->menu);
 }
 
