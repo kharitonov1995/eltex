@@ -3,7 +3,7 @@
 List *initList(char *string) {
 	List *list;
 	
-	list = (List*)malloc(sizeof(List));
+	list = malloc(sizeof(List));
 	list->data = string;
 	list->next = NULL;
 	
@@ -35,7 +35,8 @@ List *delElem(List *list, List *root) {
 	return temp;
 }
 
-List *swap(List *head, List *list1, List *list2) { // Возвращает новый корень списка
+/* Возвращает новый корень списка */
+List *swap(List *head, List *list1, List *list2) {
 	List *prev1, *prev2, *next1, *next2;
 	
 	prev1 = head;

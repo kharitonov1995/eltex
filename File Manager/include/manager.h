@@ -14,7 +14,7 @@
 
 #include "../include/list.h"
 
-const int NCOLS = 10, NLINES = 10, x = 1, y = 1, MAX_PATH = 255;
+const int MAX_PATH = 255;
 const char _DIR[] = "dir", _FILE[] = "file";
 
 typedef struct st {
@@ -28,10 +28,10 @@ typedef struct st {
 } panel;
 
 void initBox(panel*);
-void initWindow(panel*);
+void initWindow(int, int, int, int, char*, panel*);
 void initMenu(panel*, List*);
 void delMenu(panel*, List*);
 void changeDirectory(char*, char*);
-void execFile(char*, char*);//открытие только текстовых файлов
+void execFile(char*, char*);
 List *getFilesCurDir(panel*);
 int isDirectory(char *);

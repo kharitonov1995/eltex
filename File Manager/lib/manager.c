@@ -1,21 +1,29 @@
 #include "../include/manager.h"
 
-void initBox(panel *p) {
-	p->box = newwin(NLINES + 10, NCOLS+ 20, x, y);
-	box(p->box, 0, 0);
-	mvprintw(NLINES + 9, x + 1, "F1 to exit");
+void initCurses() {
+	initscr();
+	cbreak();
+	noecho();
+	curs_set(0);
 }
 
-void initWindow(panel *p) {
-	p->window = derwin(p->box, NLINES + 5, NCOLS + 15, x + 2, y + 1);
+void initWindow(int nRows, int nCols, int startX, int startY, 
+					char *title, panel *p) {
+	
+	p->box = newwin(nRows, nCols, startY, startX);
+	box(p->box, 0, 0);
+	p->window = derwin(p->box, nRows - 10, nCols - 10, startY + 1, startX + 1);
+	keypad(p->window, TRUE);
+	
+	if (title != NULL) {
+		/*TODO*/
+	}
 }
 
 void initMenu(panel *p, List *head) {
 	int sizeL = sizeList(head), i;
-	char tempPath[255];
+	char *tempPath = malloc(sizeof(char) * MAX_PATH);
 	List *list;
-	
-	printf("\n");
 	
 	p->items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
 	for(i = 0, list = head; list != NULL; i++, list = list->next) {
@@ -25,7 +33,7 @@ void initMenu(panel *p, List *head) {
 		} else {
 			p->items[i] = new_item(list->data, _FILE);
 		}
-		memset(tempPath, '\0', sizeof(tempPath));
+		memset(tempPath, '\0', strlen(tempPath));
 	}
 	
 	p->menu = new_menu(p->items);
@@ -39,15 +47,17 @@ void delMenu(panel *p, List *head) {
 	List *list;
 	unpost_menu(p->menu);
 	free_menu(p->menu);
-	for(i = 0, list = head; list != NULL; i++, list = list->next)
+	for(i = 0, list = head; list != NULL; i++, list = list->next) {
 		free_item(p->items[i]);
+	}
+	
 }
 
 List *getFilesCurDir(panel *p) {
 	List *head = NULL, *list = NULL, *temp = NULL;
 	
 	if (getcwd(p->path, sizeof(p->path)) != NULL)
-		//wprintw(p->box, p->path);
+		/*wprintw(p->box, p->path);*/
 		
 	p->dir = opendir(p->path);
 	if (p->dir != NULL) {
@@ -70,11 +80,12 @@ List *getFilesCurDir(panel *p) {
 	return head;
 }
 
+/*открытие только текстовых файлов*/
 void execFile(char *path, char *fileName) {
 	pid_t pid;
 	int status;
 	const char *prog = "/bin/nano";
-	char fullPath[PATH_MAX];
+	char *fullPath = malloc(sizeof(char) * MAX_PATH);
 	static char *argc[] = {"nano", "", NULL};
 	
 	sprintf(fullPath, "%s%c%s", path, '/', fileName);
@@ -85,12 +96,15 @@ void execFile(char *path, char *fileName) {
 		execv(prog, argc);
 	}
 	wait(&status);
+	free(fullPath);
 }
 
 void changeDirectory(char *curPath, char *distDirectory) {
 	sprintf(curPath, "%s%c%s", curPath, '/', distDirectory);
-	chdir(curPath);
-	getcwd(curPath, MAX_PATH);
+	if (chdir(curPath) != 0)
+		exit(EXIT_FAILURE);
+	if (getcwd(curPath, MAX_PATH) == NULL) 
+		exit(EXIT_FAILURE);
 }
 
 int isDirectory(char *path) {
