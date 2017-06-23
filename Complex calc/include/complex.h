@@ -1,9 +1,20 @@
+#include <dirent.h>
+#include <math.h>
+
 #ifndef COMPLEX_H
 #define COMPLEX_H
+
 typedef struct st {
 	double Rb;
 	double Im;
 } myComplex;
+
+typedef struct _plugin {
+	myComplex (*funcPlug)(myComplex, myComplex);
+	char *namePlugin;
+	char *nameFunc;
+	char *execFile;
+} plugin;
 
 myComplex Add(myComplex, myComplex);
 myComplex Sub(myComplex, myComplex);
@@ -14,6 +25,8 @@ void inputComplex(myComplex *);
 void printComplex(myComplex);
 void scan(char *, void *);
 int countPlugins();
-char **getNamesPlugins(int*);
+char **getMenu(struct dirent *, int);
 char *parseName(char*);
+int filter(const struct dirent *);
+plugin* initPlugins(plugin*, struct dirent **, int);
 #endif

@@ -1,25 +1,30 @@
+#define _GNU_SOURCE 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <unistd.h>
-#include <dirent.h>
+#include <dlfcn.h>
 
 #include "../include/complex.h"
 
 void scan(char *format, void *out) {
 	const int sizeBuf = 10;
-	char buf[sizeBuf];
+	char *buf;
 	char ch;
 	int count = 0;
 	int flagDot = 0;
 	
+	buf = malloc(sizeof(char) * sizeBuf);
 	memset(buf, '\0', sizeBuf);
 	
 	fflush(NULL);
 	
 	if (strcmp("%d", format) == 0 || strcmp("%f", format) == 0) {
-		system("stty -icanon");
+		if (system("stty -icanon") < 0) {
+			perror("stty -icanon: ");
+			exit(4);
+		}
 		while (1) {
 			ch = fgetc(stdin);
 			
@@ -40,8 +45,10 @@ void scan(char *format, void *out) {
 				break;
 			}	
 		}
-		system("stty cooked");
-		
+		if (system("stty cooked") < 0) {
+			perror("stty cooked: ");
+			exit(5);
+		}
 		
 		if (strcmp("%d", format) == 0) {
 			*(int*) out = atoi(buf);
@@ -51,30 +58,20 @@ void scan(char *format, void *out) {
 	} else if (strcmp("%s", format) == 0) {
 		char *pos;
 		
-		fgets(buf, sizeof(buf), stdin);
+		if (fgets(buf, sizeof(buf), stdin) == NULL) {
+			perror("fgets error: ");
+			exit(5);
+		}
 		if ((pos = strchr(buf, '\n')) != NULL)
 			*pos = '\0';
-		memcpy(out, buf, sizeof(buf));
+		memcpy(out, buf, strlen(buf));
 	} else if (strcmp("%c", format) == 0) {
 		ch = fgetc(stdin);
 		memcpy(out, &ch, sizeof(ch));
 	}
+	free(buf);
 }
-/*
-char **split(char *str, char *delim) {
-	int i;
-	char **res;
-	res = malloc(sizeof(char*) * 2);
-	
-	res[0] = strtok(str, delim);
-	for (i = 1; i < 2; i++) {
-		res[i] = strtok(NULL, delim);
-		if (res[i] == NULL)
-			break;
-	}
-	return res;
-}
-*/
+
 int countPlugins() {
 	int count = 0;
 	DIR *dir;
@@ -103,52 +100,36 @@ int countPlugins() {
 	return count;
 }
 
-char **getNamesPlugins(int *count) {
-	int i = 0, indx = 0;
-	DIR *dir = NULL;
-	struct dirent *ent = NULL;
-	char *path = NULL, **names = NULL;
+plugin *initPlugins(plugin *plugins, struct dirent **names, int count) {
+	int j = 0, indx = 0;
 	
-	if (*count == 0)
-		*count = countPlugins();
+	*(void **) &plugins->funcPlug = malloc(sizeof(myComplex*) * count);
 	
-	path = getenv("LD_LIBRARY_PATH");
-	if (path == NULL) {
-		perror("LD_LIBRARY_PAT is not set: ");
-		exit(3);
-	}
-	
-	names = calloc((*count), sizeof(char*));
-	for (i = 0 ; i < *count; i++)
-		names[i] = calloc(8, sizeof(char));
-	
-	i = 0;
-	dir = opendir(path);
-	if (dir != NULL) {
-		while ((ent = readdir(dir)) != NULL) {
-			if (strncmp(ent->d_name, "p_", 2) == 0) {
-				sprintf(names[indx], "%s", parseName(ent->d_name));
-				indx++;
-			}
+	while (indx < count) {
+		if (strncmp(names[indx]->d_name, "lib", 3) == 0) {
+			plugins[j].nameFunc = parseName(names[indx]->d_name);
+			plugins[j].execFile = names[indx]->d_name;
+			j++;
 		}
-		closedir(dir);
-	} else {
-		perror("Can not open directory: ");
-		exit(2);
+		indx++;
 	}
 	
-	return names;
+	return plugins;
+}
+
+int filter(const struct dirent *entry) {
+	return strstr(entry->d_name, ".so") == NULL ? 0 : 1; 
 }
 
 char *parseName(char *name) {
-	const int begin = 2;
+	const int begin = 3;
 	int len = 0;
-	char *temp = NULL;
+	char *temp = NULL, *result;
 	
 	temp = strchr(name, '.');
 	len = temp - name;
-	
-	return strndup(name + begin, len - 2);
+	result = strndup(name + begin, len - 3);
+	return result;
 }
 
 void printComplex(myComplex complx) {
@@ -156,7 +137,7 @@ void printComplex(myComplex complx) {
 }
 
 void inputComplex(myComplex *complx) {
-	printf("Re:\n> ");
+	printf("Rb:\n> ");
 	scan("%f", &complx->Rb);
 	
 	printf("Im:\n> ");

@@ -9,7 +9,7 @@ vpath %.h ../include/
 all: $(obj)
 
 %.o: %.c complex.h
-		$(CC) -c $< $(CFLAGS) $(LFLAGS)
+		$(CC) -fPIC -c $< $(CFLAGS) $(LFLAGS)
 		
 clean:
 		rm -rf *.o

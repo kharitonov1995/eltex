@@ -1,6 +1,6 @@
 #include "../include/complex.h"
 
-const char NAME_FUNC[] = "add";
+const char NAME_PLUGIN[] = "Add";
 
 myComplex add(myComplex a, myComplex b) {
 	myComplex result;
