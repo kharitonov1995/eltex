@@ -17,10 +17,9 @@ typedef struct st {
 
 void initCurses();
 void initPanel(panel*, int, int);
-void initMenuPanel(panel*);
+void initPanels(panel*, int, int, int);
 void drawMenuPanel(panel*, int, int, int, char**);
 void printToWindow(WINDOW*, char*, int, int, int);
-void delMenuPanel(panel*);
 void destructPanel(panel*);
 void execFile(char*, char*);
 int getCountFilesDir(char*);

@@ -35,11 +35,26 @@ void initPanel(panel *p, int startY, int startX) {
 	getFilesDir(p);
 	keypad(p->windowMenu, TRUE);
 }
-/*
-void initMenuPanel(panel *p) {
-	p->countItemsMenu = getCountFilesDir(p->path);
-	p->items = getFilesDir(p->path, p->countItemsMenu);
-}*/
+
+void initPanels(panel *p, int startY, int startX, int countPanels) {
+	int i, mx = 0;
+	
+	for (i = 0; i < countPanels; i++) {
+		if (i == 0) {
+			initPanel(&p[i], startY, startX);
+		} else if (i > 0) {					
+			mx = getmaxx(p[i - 1].windowMenu);
+			initPanel(&p[i], startY, mx + 1);
+		}
+		
+		drawMenuPanel(
+				&p[i], 
+				startY + 1, 
+				startX + 1, 
+				p[i].selectItem, 
+				p[i].items);
+	}
+}
 
 void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **items) {
 	int i, line, maxLines = 0, count;
@@ -82,13 +97,13 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 	free(tempString);
 }
 
-void delMenuPanel(panel *p) {
-	
-}
-
 void destructPanel(panel *p) {
-	delMenuPanel(p);
+	int i;
+	
 	delwin(p->windowMenu);
+	for (i = 0; i < p->countItems; i++)
+		free(p->items[i]);
+	free(p->items);
 }
 
 void printToWindow(WINDOW *win, char *text, int startY, int startX, int color) {
