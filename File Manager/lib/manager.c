@@ -1,3 +1,14 @@
+#include <dirent.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <termios.h>
+
 #include "../include/manager.h"
 
 void initCurses() {
@@ -5,79 +16,146 @@ void initCurses() {
 	cbreak();
 	noecho();
 	curs_set(0);
+	
+	start_color();
+	init_pair(1, COLOR_RED, COLOR_BLACK);
+	init_pair(2, COLOR_GREEN, COLOR_BLACK);
+	init_pair(3, COLOR_BLUE, COLOR_BLACK);
+	init_pair(4, COLOR_CYAN, COLOR_BLACK);
 }
 
-void initWindow(int nRows, int nCols, int startX, int startY, 
-					char *title, panel *p) {
+void initPanel(panel *p, int startY, int startX) {
+	int my, mx;
+	getmaxyx(stdscr, my, mx);
+	p->windowMenu = newwin(my - 5, mx / 2 - 1, startY, startX);
+	box(p->windowMenu, 0, 0);
+	p->startX = startX;
+	p->startY = startY;
+	p->selectItem = 0;
+	getFilesDir(p);
+	keypad(p->windowMenu, TRUE);
+}
+/*
+void initMenuPanel(panel *p) {
+	p->countItemsMenu = getCountFilesDir(p->path);
+	p->items = getFilesDir(p->path, p->countItemsMenu);
+}*/
+
+void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **items) {
+	int i, line, maxLines = 0, count;
+	char *tempPath, *tempString;
 	
-	p->box = newwin(nRows, nCols, startY, startX);
-	box(p->box, 0, 0);
-	p->window = derwin(p->box, nRows - 10, nCols - 10, startY + 1, startX + 1);
-	keypad(p->window, TRUE);
+	tempPath = malloc(sizeof(char) * MAX_PATH);
+	tempString = malloc(sizeof(char) * 32);
 	
-	if (title != NULL) {
-		/*TODO*/
+	maxLines = getmaxy(p->windowMenu);
+	
+	if (maxLines > p->countItems) {
+		count = p->countItems;
+	} else {
+		count = maxLines - 3;
+		p->countItems = maxLines - 3;
 	}
-}
-
-void initMenu(panel *p, List *head) {
-	int sizeL = sizeList(head), i;
-	char *tempPath = malloc(sizeof(char) * MAX_PATH);
-	List *list;
 	
-	p->items = (ITEM **) calloc(sizeL + 1, sizeof(ITEM *));
-	for(i = 0, list = head; list != NULL; i++, list = list->next) {
-		sprintf(tempPath, "%s%c%s", p->path, '/',  list->data);
+	for (i = 0, line = startY; i < count; i++, line++) {
+		
+		sprintf(tempPath, "%s%c%s", p->path, '/', items[i]);
+				
+		if (i == selectItem) 
+			wattron(p->windowMenu, A_STANDOUT);
+			
 		if (isDirectory(tempPath)) {
-			p->items[i] = new_item(list->data, _DIR);
+			wattron(p->windowMenu, A_BOLD);
+			sprintf(tempString, "%c%s", '/', items[i]);
+			printToWindow(p->windowMenu, tempString, line, startX, COLOR_WHITE);
+			wattroff(p->windowMenu, A_BOLD);
+			memset(tempString, '\0', strlen(tempString));
 		} else {
-			p->items[i] = new_item(list->data, _FILE);
+			printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE);
 		}
+	
+		wattroff(p->windowMenu, A_STANDOUT);
 		memset(tempPath, '\0', strlen(tempPath));
 	}
-	
-	p->menu = new_menu(p->items);
-	set_menu_win(p->menu, p->box);
-	set_menu_sub(p->menu, p->window);
-	post_menu(p->menu);
+	wrefresh(p->windowMenu);
+	free(tempPath);
+	free(tempString);
 }
 
-void delMenu(panel *p, List *head) {
-	int i;
-	List *list;
-	unpost_menu(p->menu);
-	free_menu(p->menu);
-	for(i = 0, list = head; list != NULL; i++, list = list->next) {
-		free_item(p->items[i]);
+void delMenuPanel(panel *p) {
+	
+}
+
+void destructPanel(panel *p) {
+	delMenuPanel(p);
+	delwin(p->windowMenu);
+}
+
+void printToWindow(WINDOW *win, char *text, int startY, int startX, int color) {
+	if(win == NULL)
+		win = stdscr;
+	
+	wattron(win, COLOR_PAIR(color));
+	mvwprintw(win, startY, startX, "%s", text);
+	wattroff(win, COLOR_PAIR(color));
+	wrefresh(win);
+}
+
+int getCountFilesDir(char *path) {
+	int count = 0;
+	DIR *dir;
+	struct dirent *ent = NULL;
+	
+	if (getcwd(path, MAX_PATH) == NULL) {
+		perror("Path is null: ");
+		exit(1);
 	}
 	
-}
-
-List *getFilesCurDir(panel *p) {
-	List *head = NULL, *list = NULL, *temp = NULL;
-	
-	if (getcwd(p->path, sizeof(p->path)) != NULL)
-		/*wprintw(p->box, p->path);*/
-		
-	p->dir = opendir(p->path);
-	if (p->dir != NULL) {
-		while ((p->ent = readdir(p->dir)) != NULL) {
-			if (strcmp(p->ent->d_name, ".") == 0) continue;
-			if (list == NULL) {
-				list = initList(p->ent->d_name);
-				head = list;
-			} else
-				list = addElem(p->ent->d_name, list);
-			if (strcmp(p->ent->d_name, "..") == 0) temp = list;
+	dir = opendir(path);
+	if (dir != NULL) {
+		while ((ent = readdir(dir)) != NULL) {
+			if (strcmp(ent->d_name, ".") == 0) 
+				continue; 
+			count++;
 		}
-		closedir(p->dir);
+		closedir(dir);
 	} else {
-		return NULL;
+		perror("Can not open directory: ");
+		endwin();
+		exit(2);
 	}
 	
-	head = swap(head, head, temp);
+	return count;
+}
+
+void getFilesDir(panel *p) {
+	int indx = 0, i = 0;
+	struct dirent **ent = NULL;
 	
-	return head;
+	if (getcwd(p->path, MAX_PATH) == NULL) {
+		perror("Path is null: ");
+		exit(1);
+	}
+	
+	p->countItems = scandir(p->path, &ent, NULL, alphasort);
+	
+	if (p->countItems < 0) {
+		perror("Fails scan directory: ");
+		exit(2);
+	}
+	
+	p->items = calloc(p->countItems, sizeof(char*));
+	for (i = 0; i < p->countItems; i++)
+		p->items[i] = calloc(16, sizeof(char));
+	i = 0;
+	while (indx < p->countItems) {
+		if (strcmp(ent[indx]->d_name, ".") != 0) {
+			sprintf(p->items[i], "%s", ent[indx]->d_name);
+			i++;
+		}
+		indx++;
+	}
+	p->countItems--;
 }
 
 /*открытие только текстовых файлов*/

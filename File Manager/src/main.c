@@ -1,5 +1,4 @@
 #include "../lib/manager.c"
-#include "../lib/list.c"
 /*
 void sigWinch(int signo) {
 	struct winsize size;
@@ -10,50 +9,89 @@ void sigWinch(int signo) {
 
 /*F1 to exit*/
 int main() {
-	panel panels[2];
-	List *head = NULL;
-	const int NCOLS = 35, NROWS = 20, x = 1, y = 1;
-	int ch;
-	char *itemName;
+	const int startX = 1, startY = 1, COUNT_PANELS = 2;
+	panel *panels;
+	int ch, currentPanel = 0, mx = 0, i, selectItem = 0;
 	
-	setlocale(LC_ALL, "rus");
 	initCurses();
-	initWindow(NROWS, NCOLS, x + 1, y + 1, NULL, &panels[0]); 
+	refresh();
+	panels = malloc (sizeof(panel) * COUNT_PANELS);
 	
-	head = getFilesCurDir(&panels[0]);
-	initMenu(&panels[0], head);
-	wrefresh(panels[0].box);
-	
-	while((ch = wgetch(panels[0].window)) != KEY_F(1)) {
-		switch(ch) {
-			case KEY_DOWN:
-				menu_driver(panels[0].menu, REQ_DOWN_ITEM);
-				break;
-			case KEY_UP:
-				menu_driver(panels[0].menu, REQ_UP_ITEM);
-				break;
-			case 10:
-				itemName = (char*) item_name(current_item(panels[0].menu));
-				if (strcmp(item_description(current_item(panels[0].menu)), _DIR) == 0) {					
-					changeDirectory((char*) &panels[0].path, itemName);
-					delMenu(&panels[0], head);
-				} else if (strcmp(item_description(current_item(panels[0].menu)), _FILE) == 0) {
-					execFile((char*) &panels[0].path, itemName);
-					refresh();
-					initCurses();
-					initWindow(NROWS, NCOLS, x + 1, y + 1, NULL, &panels[0]);
-				}
-				head = getFilesCurDir(&panels[0]);
-				initMenu(&panels[0], head);
-				break;
+	for (i = 0; i < COUNT_PANELS; i++) {
+		if (i == 0) {
+			initPanel(&panels[i], startY, startX);
+		} else if (i > 0) {					
+			mx = getmaxx(panels[i - 1].windowMenu);
+			initPanel(&panels[i], startY, mx + 1);
 		}
 		
-		wrefresh(panels[0].box);
+		drawMenuPanel(
+				&panels[i], 
+				startY + 1, 
+				startX + 1, 
+				panels[i].selectItem, 
+				panels[i].items);
 	}
 	
-	delMenu(&panels[0], head);
-	clearList(head);
+	while(1) {
+		ch = wgetch(panels[currentPanel].windowMenu);
+		if (ch == KEY_F(1)) break;
+		switch(ch) {
+			case KEY_DOWN:
+				if (panels[currentPanel].selectItem < panels[currentPanel].countItems - 1) 
+					panels[currentPanel].selectItem++;
+			break;
+			case KEY_UP:
+				if (panels[currentPanel].selectItem > 0) 
+					panels[currentPanel].selectItem--;
+			break;
+			case KEY_NPAGE:
+				
+				break;
+			case KEY_PPAGE:
+				
+				break;
+			case 10:
+				selectItem = panels[currentPanel].selectItem;
+				if (isDirectory(panels[currentPanel].items[selectItem])) {
+					changeDirectory(
+							panels[currentPanel].path,
+							panels[currentPanel].items[selectItem]);
+							
+					delwin(panels[currentPanel].windowMenu);
+					
+					initPanel(
+							&panels[currentPanel],
+							panels[currentPanel].startY,
+							panels[currentPanel].startX);
+				}
+			break;
+			case 9:
+				currentPanel = !currentPanel;
+			break;
+		}
+		
+		drawMenuPanel(
+				&panels[currentPanel], 
+				startY + 1, 
+				startX + 1, 
+				panels[currentPanel].selectItem, 
+				panels[currentPanel].items);
+	}
+	/*
+	for (i = 0; i < COUNT_PANELS; i++)
+		destructPanel(&panels[i]);
+	clearList(head);*/
 	endwin();
+	/*char **items, tempPath[128];
+	int count = 0;
+	printf("===%s\n", tempPath);
+	count = getCountFilesDir(tempPath);
+	items = getFilesDir(tempPath, count);
+	
+	for (i = 0; i < count; i++) {
+		printf("%s\n", items[i]);
+	}*/
 	
 	return 0;
 }

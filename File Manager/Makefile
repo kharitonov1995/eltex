@@ -1,11 +1,11 @@
 IDIR = include
 LDIR = lib
 SDIR = src
-LFLAGS = -lncurses -lmenu
-CFLAGS = -O2 -Wall -pedantic -ansi
+LFLAGS = -lncurses
+CFLAGS = -O2 -Wall -pedantic
 CC = gcc
 
-objects = main.o manager.o list.o
+objects = main.o
 SUBDIRS = $(LDIR) $(SDIR)
 
 vpath %.c $(SDIR) : $(LDIR)
@@ -25,3 +25,5 @@ $(SDIR):$(LDIR)
 
 clean:
 		rm -rf manager *.o
+		cd src 		&& $(MAKE) clean
+		cd lib		&& $(MAKE) clean
