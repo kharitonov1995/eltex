@@ -11,7 +11,7 @@ vpath %.c src:lib
 vpath %.o src:lib
 
 all: $(objects) 
-		$(CC) -o malloc $^ -lm -ldl
+		$(CC) -o malloc $^
 
 $(objects): prepare
 

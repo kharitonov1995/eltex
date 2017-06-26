@@ -12,6 +12,6 @@ all: $(obj)
 		$(CC) -c $< $(CFLAGS) $(LFLAGS)
 
 clean:
-		rm -rf main *.o
+		rm -rf main *.o *out
 
 
