@@ -8,7 +8,7 @@ vpath %.h ../include/
 
 all: $(obj)
 
-%.o: %.c complex.h
+%.o: %.c malloc.h
 		$(CC) -c $< $(CFLAGS) $(LFLAGS)
 		
 clean:
