@@ -1,4 +1,5 @@
 #include <curses.h>
+#include <panel.h>
 
 #include "../include/list.h"
 
@@ -11,6 +12,8 @@ typedef struct st {
 	int startX;
 	int startY;
 	int countItems;
+	int countShowItems;
+	int posMenu;
 	int selectItem;
 	char **items;
 } panel;
@@ -21,8 +24,9 @@ void initPanels(panel*, int, int, int);
 void drawMenuPanel(panel*, int, int, int, char**);
 void printToWindow(WINDOW*, char*, int, int, int);
 void destructPanel(panel*);
-void execFile(char*, char*);
+void execFile(char*, char*, int);
 int getCountFilesDir(char*);
 void getFilesDir(panel*);
 void changeDirectory(char*, char*);
-int isDirectory(char *);
+int isDirectory(char*);
+int isExecFile(char*);

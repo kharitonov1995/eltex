@@ -57,7 +57,7 @@ void initPanels(panel *p, int startY, int startX, int countPanels) {
 }
 
 void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **items) {
-	int i, line, maxLines = 0, count;
+	int i, line, maxLines = 0;
 	char *tempPath, *tempString;
 	
 	tempPath = malloc(sizeof(char) * MAX_PATH);
@@ -66,13 +66,12 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 	maxLines = getmaxy(p->windowMenu);
 	
 	if (maxLines > p->countItems) {
-		count = p->countItems;
+		p->countShowItems = p->countItems;
 	} else {
-		count = maxLines - 3;
-		p->countItems = maxLines - 3;
+		p->countShowItems = maxLines - 3;
 	}
 	
-	for (i = 0, line = startY; i < count; i++, line++) {
+	for (i = 0, line = startY; i < p->countShowItems; i++, line++) {
 		
 		sprintf(tempPath, "%s%c%s", p->path, '/', items[i]);
 				
@@ -86,7 +85,10 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 			wattroff(p->windowMenu, A_BOLD);
 			memset(tempString, '\0', strlen(tempString));
 		} else {
-			printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE);
+			if (!isExecFile(tempPath))
+				printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE);
+			else
+				printToWindow(p->windowMenu, items[i], line, startX, COLOR_GREEN);
 		}
 	
 		wattroff(p->windowMenu, A_STANDOUT);
@@ -159,9 +161,9 @@ void getFilesDir(panel *p) {
 		exit(2);
 	}
 	
-	p->items = calloc(p->countItems, sizeof(char*));
-	for (i = 0; i < p->countItems; i++)
-		p->items[i] = calloc(16, sizeof(char));
+	p->items = calloc(p->countItems - 1, sizeof(char*));
+	for (i = 0; i < p->countItems - 1; i++)
+		p->items[i] = calloc(32, sizeof(char));
 	i = 0;
 	while (indx < p->countItems) {
 		if (strcmp(ent[indx]->d_name, ".") != 0) {
@@ -174,19 +176,31 @@ void getFilesDir(panel *p) {
 }
 
 /*открытие только текстовых файлов*/
-void execFile(char *path, char *fileName) {
+void execFile(char *path, char *fileName, int _isExecFile) {
 	pid_t pid;
 	int status;
-	const char *prog = "/bin/nano";
-	char *fullPath = malloc(sizeof(char) * MAX_PATH);
-	static char *argc[] = {"nano", "", NULL};
+	char *prog;
+	char *fullPath;
+	char *argv1, *argv2;
 	
+	fullPath = malloc(sizeof(char) * MAX_PATH);
 	sprintf(fullPath, "%s%c%s", path, '/', fileName);
-	argc[1] = fullPath;
+	if (!_isExecFile) {
+		prog = "/home/artem/Документы/eltex/Text Editor/editor";
+		argv1 = "editor";
+		argv2 = fileName;
+	} else {
+		prog = fullPath;
+		argv1 = fileName;
+		argv2 = "";
+	}
 	
 	pid = fork();
 	if (pid == 0) {
-		execv(prog, argc);
+		if (execl(prog, argv1, argv2, NULL) < 0) {
+			perror("exec");
+			exit(EXIT_FAILURE);
+		}
 	}
 	wait(&status);
 	free(fullPath);
@@ -204,7 +218,14 @@ int isDirectory(char *path) {
 	struct stat statBuf;
 	
 	if (stat(path, &statBuf) != 0)
-		return -1;
-		
+		return -1;	
 	return S_ISDIR(statBuf.st_mode);
+}
+
+int isExecFile(char *path) {
+	struct stat statBuf;
+	
+	if (stat(path, &statBuf) != 0)
+		return -1;
+	return (S_IXUSR & statBuf.st_mode) > 0 ? 1 : 0;
 }

@@ -11,7 +11,7 @@ void sigWinch(int signo) {
 int main() {
 	const int startX = 1, startY = 1, COUNT_PANELS = 2;
 	panel *panels;
-	int ch, currentPanel = 0, i, selectItem = 0;
+	int ch, currentPanel = 0, i, selectItem = 0, _isExecFile = 0;
 	
 	initCurses();
 	refresh();
@@ -22,7 +22,7 @@ int main() {
 		if (ch == KEY_F(1)) break;
 		switch(ch) {
 			case KEY_DOWN:
-				if (panels[currentPanel].selectItem < panels[currentPanel].countItems - 1) 
+				if (panels[currentPanel].selectItem < panels[currentPanel].countShowItems - 1) 
 					panels[currentPanel].selectItem++;
 			break;
 			case KEY_UP:
@@ -42,7 +42,7 @@ int main() {
 					changeDirectory(
 							panels[currentPanel].path,
 							panels[currentPanel].items[selectItem]);
-							
+					
 					destructPanel(&panels[currentPanel]);
 					
 					initPanel(
@@ -51,15 +51,20 @@ int main() {
 							panels[currentPanel].startX);
 				} else {
 					endwin();
+					_isExecFile = isExecFile(
+								panels[currentPanel].items[selectItem]);
 					execFile(
 							panels[currentPanel].path,
-							panels[currentPanel].items[selectItem]);
-
+							panels[currentPanel].items[selectItem],
+							_isExecFile);
 					initCurses();
 				}
 			break;
 			case 9:
 				currentPanel = !currentPanel;
+			break;
+			case KEY_F(5):
+				
 			break;
 		}
 		
@@ -76,5 +81,6 @@ int main() {
 	free(panels);
 	
 	endwin();
+	curs_set(1);
 	return 0;
 }

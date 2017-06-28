@@ -24,6 +24,6 @@ $(SUBDIRS):
 $(SDIR):$(LDIR)
 
 clean:
-		rm -rf manager *.o
 		cd src 		&& $(MAKE) clean
 		cd lib		&& $(MAKE) clean
+		rm -rf manager *.o
