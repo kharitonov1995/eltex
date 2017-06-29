@@ -1,16 +1,19 @@
 IDIR = include
 LDIR = lib
 SDIR = src
-LIBS = -lncurses
-
+LFLAGS = -lncurses
+CFLAGS = -O2 -Wall -pedantic
 CC = gcc
 
-objects = main.o manager.o
+objects = main.o
 SUBDIRS = $(LDIR) $(SDIR)
 
 vpath %.c $(SDIR) : $(LDIR)
 vpath %.o $(SDIR) : $(LDIR)
 vpath %.h $(IDIR)
+
+all: $(objects)
+		$(CC) -o manager $< $(CFLAGS) $(LFLAGS) 
 
 .PHONY: prepare $(SUBDIRS)
 prepare: $(SUBDIRS)
@@ -20,5 +23,7 @@ $(SUBDIRS):
 		
 $(SDIR):$(LDIR)
 
-all: $(objects)
-		$(CC) -o manager $< $(LIBS)
+clean:
+		cd src 		&& $(MAKE) clean
+		cd lib		&& $(MAKE) clean
+		rm -rf manager *.o html latex
