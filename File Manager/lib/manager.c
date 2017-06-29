@@ -33,6 +33,7 @@ void initPanel(panel *p, int startY, int startX) {
 	p->startY = startY;
 	p->selectItem = 0;
 	getFilesDir(p);
+	p->countShowItems = getMaxShowLines(p);
 	keypad(p->windowMenu, TRUE);
 }
 
@@ -57,23 +58,17 @@ void initPanels(panel *p, int startY, int startX, int countPanels) {
 }
 
 void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **items) {
-	int i, line, maxLines = 0;
+	int i, line;
 	char *tempPath, *tempString;
 	
 	tempPath = malloc(sizeof(char) * MAX_PATH);
-	tempString = malloc(sizeof(char) * 32);
+	tempString = malloc(sizeof(char) * LENGTH_NAME);
 	
-	maxLines = getmaxy(p->windowMenu);
-	
-	if (maxLines > p->countItems) {
-		p->countShowItems = p->countItems;
-	} else {
-		p->countShowItems = maxLines - 3;
-	}
-	
-	for (i = 0, line = startY; i < p->countShowItems; i++, line++) {
+	for (i = p->beginPos, line = startY; i < p->countShowItems; i++, line++) {
 		
 		sprintf(tempPath, "%s%c%s", p->path, '/', items[i]);
+		
+		if (i >= p->countItems) break;
 				
 		if (i == selectItem) 
 			wattron(p->windowMenu, A_STANDOUT);
@@ -106,6 +101,16 @@ void destructPanel(panel *p) {
 	for (i = 0; i < p->countItems; i++)
 		free(p->items[i]);
 	free(p->items);
+}
+
+int getMaxShowLines(panel *p) {
+	int maxLines;
+	maxLines = getmaxy(p->windowMenu);
+	if (maxLines > p->countItems) {
+		return p->countItems;
+	} else {
+		return maxLines - 3;
+	}
 }
 
 void printToWindow(WINDOW *win, char *text, int startY, int startX, int color) {
@@ -175,7 +180,6 @@ void getFilesDir(panel *p) {
 	p->countItems--;
 }
 
-/*открытие только текстовых файлов*/
 void execFile(char *path, char *fileName, int _isExecFile) {
 	pid_t pid;
 	int status;

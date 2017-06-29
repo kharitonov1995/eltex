@@ -10,8 +10,9 @@ void sigWinch(int signo) {
 /*F1 to exit*/
 int main() {
 	const int startX = 1, startY = 1, COUNT_PANELS = 2;
-	panel *panels;
-	int ch, currentPanel = 0, i, selectItem = 0, _isExecFile = 0;
+	panel *panels = NULL;
+	int ch = 0, currentPanel = 0, i = 0;
+	int selectItem = 0, _isExecFile = 0, page = 0;
 	
 	initCurses();
 	refresh();
@@ -29,11 +30,42 @@ int main() {
 				if (panels[currentPanel].selectItem > 0) 
 					panels[currentPanel].selectItem--;
 			break;
-			case KEY_NPAGE:
-				
+			case KEY_NPAGE: 
+					if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
+						break;
+					
+					if (panels[currentPanel].countShowItems <= 
+							(panels[currentPanel].countItems - panels[currentPanel].beginPos)) {
+									
+						panels[currentPanel].beginPos = panels[currentPanel].countShowItems;	
+						panels[currentPanel].countShowItems += panels[currentPanel].countShowItems;
+					} else {
+						panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
+						panels[currentPanel].countShowItems = panels[currentPanel].countItems;	
+					}
+					
+					wclear(panels[currentPanel].windowMenu);
+					box(panels[currentPanel].windowMenu, 0, 0);
+					panels[currentPanel].selectItem = panels[currentPanel].beginPos;
 				break;
 			case KEY_PPAGE:
-				
+					if (panels[currentPanel].beginPos == 0) 
+						break;
+					
+					if (panels[currentPanel].beginPos >=
+							(panels[currentPanel].countItems - panels[currentPanel].countShowItems)) {	
+								
+						page = getMaxShowLines(&panels[currentPanel]);		
+						panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
+						panels[currentPanel].beginPos -= page;
+					} else {
+						panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
+						panels[currentPanel].beginPos = 0;
+					}
+					
+					wclear(panels[currentPanel].windowMenu);
+					box(panels[currentPanel].windowMenu, 0, 0);
+					panels[currentPanel].selectItem = panels[currentPanel].beginPos;
 				break;
 			case 10:
 				selectItem = panels[currentPanel].selectItem;

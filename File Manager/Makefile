@@ -26,4 +26,4 @@ $(SDIR):$(LDIR)
 clean:
 		cd src 		&& $(MAKE) clean
 		cd lib		&& $(MAKE) clean
-		rm -rf manager *.o
+		rm -rf manager *.o html latex
