@@ -1,4 +1,4 @@
-/*! \mainpage Some description of project File Manage 
+/*! \mainpage Some description of project File Manager
  *
  * \section intro_sec Introduction
  *
@@ -10,7 +10,7 @@
 #include "../include/list.h"
 
 const int MAX_PATH = 128; /**< Is maximum length of absolute path. */
-const int LENGTH_NAME = 32; /**< Is length name of elements in menu. */
+const int LENGTH_NAME = 128; /**< Is length name of elements in menu. */
 
 /**
  * @brief struct panel
@@ -70,8 +70,8 @@ int getMaxShowLines(panel*);
 void drawMenuPanel(panel*, int, int, int, char**);
 
 /**
- * printToWindow(WINDOW*, char*, int, int, int) print @param char* on the @param WINDOW*.
- * @param WINDOW* is window on which needed showing @param char*.
+ * printToWindow(WINDOW*, char*, int, int, int) print char* on the WINDOW*.
+ * @param WINDOW* is window on which needed showing char*.
  * @param char* is string or character which needed print.
  * @param int is start coordinate on Y.
  * @param int is start coordinate on X.
@@ -100,7 +100,7 @@ void execFile(char*, char*, int);
 int getCountFilesDir(char*);
 
 /**
- * getFilesDir(panel*) getting all files for @param panel*.
+ * getFilesDir(panel*) getting all files for panel*.
  * @param panel* is panel which must be filled with elements.
  * @return count elements of directory
  */

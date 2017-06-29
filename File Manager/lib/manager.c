@@ -29,6 +29,7 @@ void initPanel(panel *p, int startY, int startX) {
 	getmaxyx(stdscr, my, mx);
 	p->windowMenu = newwin(my - 5, mx / 2 - 1, startY, startX);
 	box(p->windowMenu, 0, 0);
+	p->beginPos = 0;
 	p->startX = startX;
 	p->startY = startY;
 	p->selectItem = 0;
@@ -82,8 +83,13 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 		} else {
 			if (!isExecFile(tempPath))
 				printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE);
-			else
-				printToWindow(p->windowMenu, items[i], line, startX, COLOR_GREEN);
+			else {
+				wattron(p->windowMenu, A_BOLD);
+				sprintf(tempString, "%s%s", "*", items[i]);
+				printToWindow(p->windowMenu, tempString, line, startX, COLOR_GREEN);
+				wattroff(p->windowMenu, A_BOLD);
+				memset(tempString, '\0', strlen(tempString));
+			}
 		}
 	
 		wattroff(p->windowMenu, A_STANDOUT);
