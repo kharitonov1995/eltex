@@ -1,4 +1,5 @@
 #include "../lib/manager.c"
+
 /*
 void sigWinch(int signo) {
 	struct winsize size;
@@ -9,7 +10,7 @@ void sigWinch(int signo) {
 
 /*F1 to exit*/
 int main() {
-	const int startX = 1, startY = 1, COUNT_PANELS = 2;
+	const int startX = 1, startY = 0, COUNT_PANELS = 2;
 	panel *panels = NULL;
 	int ch = 0, currentPanel = 0, i = 0;
 	int selectItem = 0, _isExecFile = 0, page = 0;
@@ -18,6 +19,7 @@ int main() {
 	refresh();
 	panels = malloc (sizeof(panel) * COUNT_PANELS);
 	initPanels(panels, startY, startX, COUNT_PANELS);
+	
 	while(1) {
 		ch = wgetch(panels[currentPanel].windowMenu);
 		if (ch == KEY_F(1)) break;
@@ -34,11 +36,17 @@ int main() {
 				if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
 					break;
 				
+				page = getMaxShowLines(&panels[currentPanel]);
+				
 				if (panels[currentPanel].countShowItems <= 
 						(panels[currentPanel].countItems - panels[currentPanel].beginPos)) {
-								
-					panels[currentPanel].beginPos = panels[currentPanel].countShowItems;	
-					panels[currentPanel].countShowItems += panels[currentPanel].countShowItems;
+							
+					panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
+					
+					if (panels[currentPanel].countItems < (panels[currentPanel].beginPos + page)) 
+						panels[currentPanel].countShowItems = panels[currentPanel].countItems;
+					else 
+						panels[currentPanel].countShowItems += page;
 				} else {
 					panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
 					panels[currentPanel].countShowItems = panels[currentPanel].countItems;	
@@ -96,7 +104,17 @@ int main() {
 				currentPanel = !currentPanel;
 			break;
 			case KEY_F(5):
-				
+				selectItem = panels[currentPanel].selectItem;
+				if (!isDirectory(panels[currentPanel].items[selectItem])) {	
+					copyForm(
+							&panels[currentPanel],
+							panels[currentPanel].items[selectItem]);
+				}
+				destructPanel(&panels[currentPanel]);
+				initPanel(
+						&panels[currentPanel],
+						panels[currentPanel].startY,
+						panels[currentPanel].startX);
 			break;
 		}
 		

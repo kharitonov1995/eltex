@@ -1,7 +1,7 @@
 IDIR = include
 LDIR = lib
 SDIR = src
-LFLAGS = -lncurses
+LFLAGS = -lncurses -lform -lpthread
 CFLAGS = -O2 -Wall -pedantic
 CC = gcc
 

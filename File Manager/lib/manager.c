@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <termios.h>
+#include <pthread.h>
+#include <form.h>
+#include <ctype.h>
 
 #include "../include/manager.h"
 
@@ -115,7 +118,7 @@ int getMaxShowLines(panel *p) {
 	if (maxLines > p->countItems) {
 		return p->countItems;
 	} else {
-		return maxLines - 3;
+		return maxLines - 2;
 	}
 }
 
@@ -174,7 +177,7 @@ void getFilesDir(panel *p) {
 	
 	p->items = calloc(p->countItems - 1, sizeof(char*));
 	for (i = 0; i < p->countItems - 1; i++)
-		p->items[i] = calloc(32, sizeof(char));
+		p->items[i] = calloc(LENGTH_NAME, sizeof(char));
 	i = 0;
 	while (indx < p->countItems) {
 		if (strcmp(ent[indx]->d_name, ".") != 0) {
@@ -214,6 +217,179 @@ void execFile(char *path, char *fileName, int _isExecFile) {
 	}
 	wait(&status);
 	free(fullPath);
+}
+
+char *trimSpaces(char *str) {
+	char *end;
+	
+	while(isspace(*str))
+		str++;
+
+	if(*str == 0)
+		return str;
+
+	end = str + strlen(str) - 1;
+
+	while(end > str && isspace(*end))
+		end--;
+		
+	*(end + 1) = '\0';
+	
+	return str;
+}
+
+void *threadCopy(void *arg) {
+	struct argsThread *args = (struct argsThread*) arg;/*
+	mvwprintw(args->p->windowMenu, 1, 1, args->targetPath);
+	wrefresh(args->p->windowMenu);*/
+	char *buf;
+	FILE *fileWrite;
+	
+	buf = malloc(SIZE_COPY_SINDOW * sizeof(char));
+	fileWrite = fopen(args->targetPath, "w+");
+	if (fileWrite == NULL) {
+		perror("Can not open file to write");
+		pthread_exit(0);
+	}
+	
+	while (fread(buf, sizeof(char), SIZE_COPY_SINDOW, args->file) > 0) {
+		fwrite(buf, sizeof(char), SIZE_COPY_SINDOW, fileWrite);
+		memset(buf, 0, SIZE_COPY_SINDOW);
+	}
+	
+	fflush(fileWrite);
+	fclose(fileWrite);
+	fclose(args->file);
+	free(buf);
+	pthread_exit(0);
+}
+
+void *threadDraw(void *arg) {
+	struct argsThread *args = (struct argsThread*) arg;
+	struct stat statBuf;
+	WINDOW *copy = NULL;
+	int fileSize = 0, procent = 0, col = 1;
+	int i;
+	
+	copy = derwin(args->win, 2, SIZE_COPY_SINDOW, 6, 2);
+	stat(args->sourcePath, &statBuf);
+	fileSize = statBuf.st_size;
+	procent =  fileSize / SIZE_COPY_SINDOW;
+	curs_set(0);
+	
+	for (i = 0; i < fileSize; i += procent, col++) {
+		for (int j = 0; j < procent; j++) { }
+		mvwprintw(copy, 0, col, "=");
+		wrefresh(copy);
+	}
+	
+	wprintw(copy, "Success");
+	curs_set(1);
+	delwin(copy);
+	pthread_exit(0);
+}
+
+void copyForm(panel *p, char *fileCopy) {
+	pthread_t _threadCopy;
+	pthread_t _threadDraw;
+	FORM *form;
+	FIELD *field[3];
+	WINDOW *copyWin;
+	int mx, my, ch;
+	struct argsThread *arg = NULL;
+	char *tempPath;
+	
+	arg = malloc(sizeof(struct argsThread));
+	arg->targetPath = calloc(MAX_PATH, sizeof(char));
+	arg->sourcePath = calloc(MAX_PATH, sizeof(char));
+	
+	sprintf(arg->sourcePath, "%s%c%s", p->path, '/', fileCopy);
+	
+	getmaxyx(p->windowMenu, my, mx);
+	copyWin = derwin(p->windowMenu, 10, mx - 2, my / 2 - 2, 1);
+
+	getmaxyx(copyWin, my, mx);
+	field[0] = new_field(1, mx / 2, 0, 1, 0, 0);
+	field[1] = new_field(1, mx - 5, 2, 0, 0, MAX_PATH);
+	field[2] = NULL;
+	
+	field_opts_off(field[0], O_ACTIVE);
+	set_field_buffer(field[0], 0, "The path to copy:"); 
+	
+	field_opts_off(field[1], O_STATIC | O_BLANK);
+	set_field_back(field[1], A_UNDERLINE);
+	set_field_buffer(field[1], 0, arg->sourcePath);
+	set_max_field(field[1], MAX_PATH);
+	
+	form = new_form(field);
+	set_form_win(form, copyWin);
+	set_form_sub(form, derwin(copyWin, my - 4, mx - 4, 2, 2));
+	post_form(form);
+	
+	mvwhline(copyWin, 0, 0, '-', mx);
+	mvwhline(copyWin, my - 1, 0, '-', mx);
+	
+	form_driver(form, REQ_END_FIELD);
+	wrefresh(copyWin);
+	
+	keypad(copyWin, TRUE);
+    curs_set(1); 
+	while(ch != 27) {
+		ch = wgetch(copyWin);
+		switch(ch) {
+			case KEY_LEFT:
+				form_driver(form, REQ_PREV_CHAR);
+				break;
+			case KEY_RIGHT:
+				form_driver(form, REQ_NEXT_CHAR);
+				break;
+			case KEY_BACKSPACE:
+				form_driver(form, REQ_DEL_PREV);
+				break;
+			case KEY_DC:
+				form_driver(form, REQ_DEL_CHAR);
+				break;
+			case KEY_ENTER:
+			case 10:
+				if (form_driver(form, REQ_VALIDATION) == E_OK) {
+					tempPath = trimSpaces(field_buffer(field[1], 0));
+					if (strcmp(tempPath, arg->sourcePath) == 0) {
+						sprintf(
+								arg->targetPath,
+								"%s%ccopy_%s", 
+								p->path, 
+								'/',
+								fileCopy);
+					} else  {
+						sprintf(arg->targetPath, "%s", tempPath);
+					}
+				} else {
+					break;
+				}
+				arg->win = copyWin;
+				arg->file = fopen(arg->sourcePath, "r");
+				if (arg->file != NULL) {
+					pthread_create(&_threadCopy, NULL, threadCopy, arg);
+					pthread_create(&_threadDraw, NULL, threadDraw, arg);
+					
+					pthread_join(_threadCopy, NULL);
+					pthread_join(_threadDraw, NULL);
+				} else {
+					perror("Connot open file for copy");
+					exit(EXIT_FAILURE);
+				}
+				break;
+			default: 
+				form_driver(form, ch);
+				break;
+		}
+		wrefresh(copyWin);
+	}
+    curs_set(0);
+    
+	free(arg->targetPath);
+	free(arg->sourcePath);
+	free(arg);
 }
 
 void changeDirectory(char *curPath, char *distDirectory) {

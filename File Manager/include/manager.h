@@ -10,12 +10,13 @@
 #include "../include/list.h"
 
 const int MAX_PATH = 128; /**< Is maximum length of absolute path. */
-const int LENGTH_NAME = 128; /**< Is length name of elements in menu. */
+const int LENGTH_NAME = 255; /**< Is length name of elements in menu. */
+const int SIZE_COPY_SINDOW = 30;/**< Is size window which showing proccess copying, also it is size of block of copied data. */
 
 /**
- * @brief struct panel
+ * @brief Struct panel
  * 
- * Using for store information about each of panels
+ * Using for store information about each of panels.
  * 
  **/
 typedef struct _panel {
@@ -29,6 +30,19 @@ typedef struct _panel {
 	int beginPos; /**< Starting position in the list for page. Used when scrolling window; */
 	int selectItem; /**< Position selectable item. */
 } panel;
+
+/**
+ * @brief Struct of arguments
+ * 
+ * Using for store and sending argumets to threads.
+ * 
+ **/
+struct argsThread {
+	char *targetPath; /**< Is absolute path to target file. */
+	char *sourcePath; /**< Is absolute path to source file. */
+	FILE *file; /**< Is file which needed copy. */
+	WINDOW *win; /**< Is window which showing field of input for target file. */
+};
 
 /**
  * initCurses() initialize all properties for terminal.
@@ -122,7 +136,33 @@ int isDirectory(char*);
 
 /**
  * isExecFile(char*) checking char* for executable file.
- * @param char* is is name file.
+ * @param char* it's name file.
  * @return 1 if char* is executable file, otherwise 0.
  */
 int isExecFile(char*);
+
+/**
+ * threadCopy(void*) is function of thread copy.
+ * @param void* is pointer on struct argsThread.
+ */
+void *threadCopy(void*);
+
+/**
+ * threadDraw(void*) is function of thread draw.
+ * @param void* is pointer on struct argsThread.
+ */
+void *threadDraw(void*);
+
+/**
+ * copyForm(panel*, char*) is function which build window copy and showing copy procces.
+ * @param panel* it's address of panel.
+ * @param char* is file name which must be copied.
+ */
+void copyForm(panel*, char*);
+
+/**
+ * trimSpaces(char*) is function which deleting spaces at end of string.
+ * @param char* is string which must be trimmed.
+ * @return pointer on the string without spaces.
+ */
+char *trimSpaces(char*);
