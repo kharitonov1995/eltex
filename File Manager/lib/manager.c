@@ -21,10 +21,43 @@ void initCurses() {
 	curs_set(0);
 	
 	start_color();
+	init_pair(0, COLOR_BLACK, COLOR_WHITE);
 	init_pair(1, COLOR_RED, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK);
 	init_pair(3, COLOR_BLUE, COLOR_BLACK);
 	init_pair(4, COLOR_CYAN, COLOR_BLACK);
+	init_pair(8, COLOR_BLACK, COLOR_WHITE);
+}
+
+WINDOW *initWindowInfo() {
+	WINDOW *win = NULL;
+	WINDOW *winF1 = NULL, *winTab = NULL, *winCopy = NULL;
+	int mx, cols = 10, startX = 1;
+	
+	mx = getmaxx(stdscr);
+	win = newwin(1, mx - 2, 0, 1);
+	
+	winF1 = derwin(win, 1, cols, 0, startX);
+	wprintw(winF1, "F1 - Exit");
+	wvline(winF1, '|', 1);
+	
+	startX += cols;
+	cols += cols;
+	
+	winTab = derwin(win, 1, cols, 0, startX);
+	wprintw(winTab, "Tab - Switch panels");
+	wvline(winTab, '|', 1);
+	
+	startX += cols;
+	
+	winCopy = derwin(win, 1, cols, 0, startX);
+	wprintw(winCopy, "F5 - Copy");
+	wvline(winCopy, '|', 1);
+	
+	wbkgd(win, COLOR_PAIR(8));
+	wrefresh(win);
+	
+	return win;
 }
 
 void initPanel(panel *p, int startY, int startX) {
@@ -54,7 +87,7 @@ void initPanels(panel *p, int startY, int startX, int countPanels) {
 		
 		drawMenuPanel(
 				&p[i], 
-				startY + 1, 
+				startY, 
 				startX + 1, 
 				p[i].selectItem, 
 				p[i].items);
@@ -78,25 +111,16 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 			wattron(p->windowMenu, A_STANDOUT);
 			
 		if (isDirectory(tempPath)) {
-			wattron(p->windowMenu, A_BOLD);
 			sprintf(tempString, "%c%s", '/', items[i]);
-			printToWindow(p->windowMenu, tempString, line, startX, COLOR_WHITE);
-			wattroff(p->windowMenu, A_BOLD);
-			memset(tempString, '\0', strlen(tempString));
+			printToWindow(p->windowMenu, tempString, line, startX, COLOR_BLACK, A_BOLD);
+		} else if (isExecFile(tempPath)) {
+			sprintf(tempString, "%s%s", "*", items[i]);
+			printToWindow(p->windowMenu, tempString, line, startX, COLOR_GREEN, A_BOLD);
 		} else {
-			if (!isExecFile(tempPath))
-				printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE);
-			else {
-				wattron(p->windowMenu, A_BOLD);
-				sprintf(tempString, "%s%s", "*", items[i]);
-				printToWindow(p->windowMenu, tempString, line, startX, COLOR_GREEN);
-				wattroff(p->windowMenu, A_BOLD);
-				memset(tempString, '\0', strlen(tempString));
-			}
+			printToWindow(p->windowMenu, items[i], line, startX, COLOR_BLUE, 0);
 		}
-	
+		memset(tempString, '\0', strlen(tempString));
 		wattroff(p->windowMenu, A_STANDOUT);
-		memset(tempPath, '\0', strlen(tempPath));
 	}
 	wrefresh(p->windowMenu);
 	free(tempPath);
@@ -122,13 +146,17 @@ int getMaxShowLines(panel *p) {
 	}
 }
 
-void printToWindow(WINDOW *win, char *text, int startY, int startX, int color) {
+void printToWindow(WINDOW *win, char *text, int startY, int startX, int color, int attr) {
 	if(win == NULL)
 		win = stdscr;
 	
+	if (attr != 0)
+		wattron(win, attr);
+		
 	wattron(win, COLOR_PAIR(color));
 	mvwprintw(win, startY, startX, "%s", text);
 	wattroff(win, COLOR_PAIR(color));
+	wattroff(win, attr);
 	wrefresh(win);
 }
 
@@ -239,9 +267,7 @@ char *trimSpaces(char *str) {
 }
 
 void *threadCopy(void *arg) {
-	struct argsThread *args = (struct argsThread*) arg;/*
-	mvwprintw(args->p->windowMenu, 1, 1, args->targetPath);
-	wrefresh(args->p->windowMenu);*/
+	struct argsThread *args = (struct argsThread*) arg;
 	char *buf;
 	FILE *fileWrite;
 	
@@ -257,7 +283,6 @@ void *threadCopy(void *arg) {
 		memset(buf, 0, SIZE_COPY_SINDOW);
 	}
 	
-	fflush(fileWrite);
 	fclose(fileWrite);
 	fclose(args->file);
 	free(buf);
@@ -271,7 +296,7 @@ void *threadDraw(void *arg) {
 	int fileSize = 0, procent = 0, col = 1;
 	int i;
 	
-	copy = derwin(args->win, 2, SIZE_COPY_SINDOW, 6, 2);
+	copy = derwin(args->win, 2, SIZE_COPY_SINDOW , 6, 2);
 	stat(args->sourcePath, &statBuf);
 	fileSize = statBuf.st_size;
 	procent =  fileSize / SIZE_COPY_SINDOW;
@@ -307,7 +332,8 @@ void copyForm(panel *p, char *fileCopy) {
 	
 	getmaxyx(p->windowMenu, my, mx);
 	copyWin = derwin(p->windowMenu, 10, mx - 2, my / 2 - 2, 1);
-
+	werase(copyWin);
+	
 	getmaxyx(copyWin, my, mx);
 	field[0] = new_field(1, mx / 2, 0, 1, 0, 0);
 	field[1] = new_field(1, mx - 5, 2, 0, 0, MAX_PATH);

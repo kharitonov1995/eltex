@@ -11,7 +11,7 @@
 
 const int MAX_PATH = 128; /**< Is maximum length of absolute path. */
 const int LENGTH_NAME = 255; /**< Is length name of elements in menu. */
-const int SIZE_COPY_SINDOW = 30;/**< Is size window which showing proccess copying, also it is size of block of copied data. */
+const int SIZE_COPY_SINDOW = 32;/**< Is size window which showing proccess copying, also it is size of block of copied data. */
 
 /**
  * @brief Struct panel
@@ -58,6 +58,12 @@ void initCurses();
 void initPanel(panel*, int, int);
 
 /**
+ * initWindowInfo() initialize window which showing navigation bar.
+ * @return created window.
+ */ 
+WINDOW *initWindowInfo();
+
+/**
  * initPanels(panel*, int, int, int) initialize all properties for multiply panel.
  * @param panel* is address of initialize panel.
  * @param int is start coordinate on Y.
@@ -90,8 +96,9 @@ void drawMenuPanel(panel*, int, int, int, char**);
  * @param int is start coordinate on Y.
  * @param int is start coordinate on X.
  * @param int is color.
+ * @param int is attributes for text, if == 0 then attributes is off;
  */
-void printToWindow(WINDOW*, char*, int, int, int);
+void printToWindow(WINDOW*, char*, int, int, int, int);
 
 /**
  * destructPanel(panel*) free items menu of panel and destruct panel.

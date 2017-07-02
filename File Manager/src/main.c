@@ -10,13 +10,15 @@ void sigWinch(int signo) {
 
 /*F1 to exit*/
 int main() {
-	const int startX = 1, startY = 0, COUNT_PANELS = 2;
+	const int startX = 1, startY = 1, COUNT_PANELS = 2;
 	panel *panels = NULL;
+	WINDOW *windowInfo = NULL;
 	int ch = 0, currentPanel = 0, i = 0;
 	int selectItem = 0, _isExecFile = 0, page = 0;
 	
 	initCurses();
 	refresh();
+	windowInfo = initWindowInfo();
 	panels = malloc (sizeof(panel) * COUNT_PANELS);
 	initPanels(panels, startY, startX, COUNT_PANELS);
 	
@@ -33,8 +35,8 @@ int main() {
 					panels[currentPanel].selectItem--;
 			break;
 			case KEY_NPAGE: 
-				if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
-					break;
+				/*if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
+					break;*/
 				
 				page = getMaxShowLines(&panels[currentPanel]);
 				
@@ -52,7 +54,7 @@ int main() {
 					panels[currentPanel].countShowItems = panels[currentPanel].countItems;	
 				}
 				
-				wclear(panels[currentPanel].windowMenu);
+				werase(panels[currentPanel].windowMenu);
 				box(panels[currentPanel].windowMenu, 0, 0);
 				panels[currentPanel].selectItem = panels[currentPanel].beginPos;
 			break;
@@ -120,7 +122,7 @@ int main() {
 		
 		drawMenuPanel(
 				&panels[currentPanel], 
-				startY + 1, 
+				startY, 
 				startX + 1, 
 				panels[currentPanel].selectItem, 
 				panels[currentPanel].items);
@@ -130,6 +132,7 @@ int main() {
 		destructPanel(&panels[i]);
 	free(panels);
 	
+	delwin(windowInfo);
 	endwin();
 	curs_set(1);
 	return 0;
