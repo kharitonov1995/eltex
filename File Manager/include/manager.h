@@ -26,8 +26,8 @@ typedef struct _panel {
 	int startX; /**< Coordinate on x. */
 	int startY; /**< Coordinate on y. */
 	int countItems; /**< Count all elements on current directory. */
-	int countShowItems; /**< Count shows elements which are placed in panel#windowMenu. */
-	int beginPos; /**< Starting position in the list for page. Used when scrolling window; */
+	int beginPos; /**< Starting position in the list for page. */
+	int endPos; /**< Ending position in the list for page. */
 	int selectItem; /**< Position selectable item. */
 } panel;
 

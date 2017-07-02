@@ -27,53 +27,39 @@ int main() {
 		if (ch == KEY_F(1)) break;
 		switch(ch) {
 			case KEY_DOWN:
-				if (panels[currentPanel].selectItem < panels[currentPanel].countShowItems - 1) 
+				if (panels[currentPanel].selectItem < panels[currentPanel].endPos - 1) 
 					panels[currentPanel].selectItem++;
 			break;
 			case KEY_UP:
-				if (panels[currentPanel].selectItem > 0) 
+				if (panels[currentPanel].selectItem > panels[currentPanel].beginPos) 
 					panels[currentPanel].selectItem--;
 			break;
-			case KEY_NPAGE: 
-				/*if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
-					break;*/
-				
+			case KEY_NPAGE:
+			case KEY_PPAGE:
 				page = getMaxShowLines(&panels[currentPanel]);
 				
-				if (panels[currentPanel].countShowItems <= 
-						(panels[currentPanel].countItems - panels[currentPanel].beginPos)) {
-							
-					panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
+				if (ch == KEY_NPAGE) {
+					if (panels[currentPanel].endPos == panels[currentPanel].countItems)
+						break;
+					
+					panels[currentPanel].beginPos = panels[currentPanel].endPos;
 					
 					if (panels[currentPanel].countItems < (panels[currentPanel].beginPos + page)) 
-						panels[currentPanel].countShowItems = panels[currentPanel].countItems;
+						panels[currentPanel].endPos = panels[currentPanel].countItems;
 					else 
-						panels[currentPanel].countShowItems += page;
+						panels[currentPanel].endPos += page;
 				} else {
-					panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
-					panels[currentPanel].countShowItems = panels[currentPanel].countItems;	
+					if (panels[currentPanel].beginPos == 0) 
+						break;
+					
+					panels[currentPanel].endPos = panels[currentPanel].beginPos;	
+					
+					if ((panels[currentPanel].beginPos - page) < 0) 
+						panels[currentPanel].beginPos = 0;
+					else 
+						panels[currentPanel].beginPos -= page;
 				}
-				
 				werase(panels[currentPanel].windowMenu);
-				box(panels[currentPanel].windowMenu, 0, 0);
-				panels[currentPanel].selectItem = panels[currentPanel].beginPos;
-			break;
-			case KEY_PPAGE:
-				if (panels[currentPanel].beginPos == 0) 
-					break;
-				
-				if (panels[currentPanel].beginPos >=
-						(panels[currentPanel].countItems - panels[currentPanel].countShowItems)) {	
-							
-					page = getMaxShowLines(&panels[currentPanel]);		
-					panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
-					panels[currentPanel].beginPos -= page;
-				} else {
-					panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
-					panels[currentPanel].beginPos = 0;
-				}
-				
-				wclear(panels[currentPanel].windowMenu);
 				box(panels[currentPanel].windowMenu, 0, 0);
 				panels[currentPanel].selectItem = panels[currentPanel].beginPos;
 			break;

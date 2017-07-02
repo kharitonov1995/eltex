@@ -21,7 +21,7 @@ void initCurses() {
 	curs_set(0);
 	
 	start_color();
-	init_pair(0, COLOR_BLACK, COLOR_WHITE);
+	init_pair(0, COLOR_WHITE, COLOR_BLACK);
 	init_pair(1, COLOR_RED, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK);
 	init_pair(3, COLOR_BLUE, COLOR_BLACK);
@@ -70,7 +70,7 @@ void initPanel(panel *p, int startY, int startX) {
 	p->startY = startY;
 	p->selectItem = 0;
 	getFilesDir(p);
-	p->countShowItems = getMaxShowLines(p);
+	p->endPos = getMaxShowLines(p);
 	keypad(p->windowMenu, TRUE);
 }
 
@@ -101,7 +101,7 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 	tempPath = malloc(sizeof(char) * MAX_PATH);
 	tempString = malloc(sizeof(char) * LENGTH_NAME);
 	
-	for (i = p->beginPos, line = startY; i < p->countShowItems; i++, line++) {
+	for (i = p->beginPos, line = startY; i < p->endPos; i++, line++) {
 		
 		sprintf(tempPath, "%s%c%s", p->path, '/', items[i]);
 		
