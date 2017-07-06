@@ -9,10 +9,6 @@
 
 #include "../include/list.h"
 
-const int MAX_PATH = 128; /**< Is maximum length of absolute path. */
-const int LENGTH_NAME = 255; /**< Is length name of elements in menu. */
-const int SIZE_COPY_SINDOW = 32;/**< Is size window which showing proccess copying, also it is size of block of copied data. */
-
 /**
  * @brief Struct panel
  * 
@@ -85,7 +81,7 @@ int getMaxShowLines(panel*);
  * @param int is start coordinate on Y.
  * @param int is start coordinate on X.
  * @param int is mark of select item for panel*.
- * @param char** is array of strings lenght LENGTH_NAME bytes each 
+ * @param char** is array of strings lenght 255 bytes each 
  */
 void drawMenuPanel(panel*, int, int, int, char**);
 

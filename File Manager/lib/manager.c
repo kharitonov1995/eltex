@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -13,6 +15,10 @@
 #include <ctype.h>
 
 #include "../include/manager.h"
+
+const int MAX_PATH = 128; /**< It is maximum length of absolute path. */
+const int LENGTH_NAME = 255; /**< It is length name of elements in menu. */
+const int SIZE_COPY_BLOCK = 90;/**< It is size of showing blocks of copied data. */
 
 void initCurses() {
 	initscr();
@@ -104,9 +110,7 @@ void drawMenuPanel(panel *p, int startY, int startX, int selectItem, char **item
 	for (i = p->beginPos, line = startY; i < p->endPos; i++, line++) {
 		
 		sprintf(tempPath, "%s%c%s", p->path, '/', items[i]);
-		
-		if (i >= p->countItems) break;
-				
+						
 		if (i == selectItem) 
 			wattron(p->windowMenu, A_STANDOUT);
 			
@@ -139,7 +143,7 @@ void destructPanel(panel *p) {
 int getMaxShowLines(panel *p) {
 	int maxLines;
 	maxLines = getmaxy(p->windowMenu);
-	if (maxLines > p->countItems) {
+	if ((maxLines - 1) > p->countItems) {
 		return p->countItems;
 	} else {
 		return maxLines - 2;
@@ -270,17 +274,18 @@ void *threadCopy(void *arg) {
 	struct argsThread *args = (struct argsThread*) arg;
 	char *buf;
 	FILE *fileWrite;
+	const int sizeBuf = 1024;
 	
-	buf = malloc(SIZE_COPY_SINDOW * sizeof(char));
+	buf = malloc(sizeBuf * sizeof(char));
 	fileWrite = fopen(args->targetPath, "w+");
 	if (fileWrite == NULL) {
 		perror("Can not open file to write");
 		pthread_exit(0);
 	}
 	
-	while (fread(buf, sizeof(char), SIZE_COPY_SINDOW, args->file) > 0) {
-		fwrite(buf, sizeof(char), SIZE_COPY_SINDOW, fileWrite);
-		memset(buf, 0, SIZE_COPY_SINDOW);
+	while (fread(buf, sizeof(char), sizeBuf, args->file) > 0) {
+		fwrite(buf, sizeof(char), sizeBuf, fileWrite);
+		memset(buf, 0, sizeBuf);
 	}
 	
 	fclose(fileWrite);
@@ -294,16 +299,18 @@ void *threadDraw(void *arg) {
 	struct stat statBuf;
 	WINDOW *copy = NULL;
 	int fileSize = 0, procent = 0, col = 1;
-	int i;
+	int i, j, mx = 0;
 	
-	copy = derwin(args->win, 2, SIZE_COPY_SINDOW , 6, 2);
+	mx = getmaxx(args->win);
+	copy = derwin(args->win, 2, mx - 4 , 6, 2);
+	werase(copy);
 	stat(args->sourcePath, &statBuf);
 	fileSize = statBuf.st_size;
-	procent =  fileSize / SIZE_COPY_SINDOW;
+	procent =  fileSize / SIZE_COPY_BLOCK;
 	curs_set(0);
 	
 	for (i = 0; i < fileSize; i += procent, col++) {
-		for (int j = 0; j < procent; j++) { }
+		for (j = 0; j < procent; j++) { }
 		mvwprintw(copy, 0, col, "=");
 		wrefresh(copy);
 	}

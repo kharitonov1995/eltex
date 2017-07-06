@@ -2,10 +2,10 @@ IDIR = include
 LDIR = lib
 SDIR = src
 LFLAGS = -lncurses -lform -lpthread
-CFLAGS = -O2 -Wall -pedantic
+CFLAGS = -O2 -Wall -pedantic -ansi
 CC = gcc
 
-objects = main.o
+objects = $(SDIR)/main.o
 SUBDIRS = $(LDIR) $(SDIR)
 
 vpath %.c $(SDIR) : $(LDIR)

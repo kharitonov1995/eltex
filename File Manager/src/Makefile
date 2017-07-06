@@ -1,4 +1,4 @@
-CFLAGS = -O2 -Wall -pedantic                                                            
+CFLAGS = -O2 -Wall -pedantic -ansi
 LFLAGS = -lncurses                                                                      
 																					  
 vpath %.h ../include/                                                                   
