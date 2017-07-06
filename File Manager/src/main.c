@@ -1,4 +1,5 @@
 #include "../lib/manager.c"
+
 /*
 void sigWinch(int signo) {
 	struct winsize size;
@@ -11,62 +12,57 @@ void sigWinch(int signo) {
 int main() {
 	const int startX = 1, startY = 1, COUNT_PANELS = 2;
 	panel *panels = NULL;
+	WINDOW *windowInfo = NULL;
 	int ch = 0, currentPanel = 0, i = 0;
 	int selectItem = 0, _isExecFile = 0, page = 0;
 	
 	initCurses();
 	refresh();
+	windowInfo = initWindowInfo();
 	panels = malloc (sizeof(panel) * COUNT_PANELS);
 	initPanels(panels, startY, startX, COUNT_PANELS);
+	
 	while(1) {
 		ch = wgetch(panels[currentPanel].windowMenu);
 		if (ch == KEY_F(1)) break;
 		switch(ch) {
 			case KEY_DOWN:
-				if (panels[currentPanel].selectItem < panels[currentPanel].countShowItems - 1) 
+				if (panels[currentPanel].selectItem < panels[currentPanel].endPos - 1) 
 					panels[currentPanel].selectItem++;
 			break;
 			case KEY_UP:
-				if (panels[currentPanel].selectItem > 0) 
+				if (panels[currentPanel].selectItem > panels[currentPanel].beginPos) 
 					panels[currentPanel].selectItem--;
 			break;
-			case KEY_NPAGE: 
-					if (panels[currentPanel].countShowItems == panels[currentPanel].countItems)
+			case KEY_NPAGE:
+			case KEY_PPAGE:
+				page = getMaxShowLines(&panels[currentPanel]);
+				
+				if (ch == KEY_NPAGE) {
+					if (panels[currentPanel].endPos == panels[currentPanel].countItems)
 						break;
 					
-					if (panels[currentPanel].countShowItems <= 
-							(panels[currentPanel].countItems - panels[currentPanel].beginPos)) {
-									
-						panels[currentPanel].beginPos = panels[currentPanel].countShowItems;	
-						panels[currentPanel].countShowItems += panels[currentPanel].countShowItems;
-					} else {
-						panels[currentPanel].beginPos = panels[currentPanel].countShowItems;
-						panels[currentPanel].countShowItems = panels[currentPanel].countItems;	
-					}
+					panels[currentPanel].beginPos = panels[currentPanel].endPos;
 					
-					wclear(panels[currentPanel].windowMenu);
-					box(panels[currentPanel].windowMenu, 0, 0);
-					panels[currentPanel].selectItem = panels[currentPanel].beginPos;
-				break;
-			case KEY_PPAGE:
+					if (panels[currentPanel].countItems < (panels[currentPanel].beginPos + page)) 
+						panels[currentPanel].endPos = panels[currentPanel].countItems;
+					else 
+						panels[currentPanel].endPos += page;
+				} else {
 					if (panels[currentPanel].beginPos == 0) 
 						break;
 					
-					if (panels[currentPanel].beginPos >=
-							(panels[currentPanel].countItems - panels[currentPanel].countShowItems)) {	
-								
-						page = getMaxShowLines(&panels[currentPanel]);		
-						panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
-						panels[currentPanel].beginPos -= page;
-					} else {
-						panels[currentPanel].countShowItems = panels[currentPanel].beginPos;	
-						panels[currentPanel].beginPos = 0;
-					}
+					panels[currentPanel].endPos = panels[currentPanel].beginPos;	
 					
-					wclear(panels[currentPanel].windowMenu);
-					box(panels[currentPanel].windowMenu, 0, 0);
-					panels[currentPanel].selectItem = panels[currentPanel].beginPos;
-				break;
+					if ((panels[currentPanel].beginPos - page) < 0) 
+						panels[currentPanel].beginPos = 0;
+					else 
+						panels[currentPanel].beginPos -= page;
+				}
+				werase(panels[currentPanel].windowMenu);
+				box(panels[currentPanel].windowMenu, 0, 0);
+				panels[currentPanel].selectItem = panels[currentPanel].beginPos;
+			break;
 			case 10:
 				selectItem = panels[currentPanel].selectItem;
 				
@@ -96,13 +92,23 @@ int main() {
 				currentPanel = !currentPanel;
 			break;
 			case KEY_F(5):
-				
+				selectItem = panels[currentPanel].selectItem;
+				if (!isDirectory(panels[currentPanel].items[selectItem])) {	
+					copyForm(
+							&panels[currentPanel],
+							panels[currentPanel].items[selectItem]);
+				}
+				destructPanel(&panels[currentPanel]);
+				initPanel(
+						&panels[currentPanel],
+						panels[currentPanel].startY,
+						panels[currentPanel].startX);
 			break;
 		}
 		
 		drawMenuPanel(
 				&panels[currentPanel], 
-				startY + 1, 
+				startY, 
 				startX + 1, 
 				panels[currentPanel].selectItem, 
 				panels[currentPanel].items);
@@ -112,6 +118,7 @@ int main() {
 		destructPanel(&panels[i]);
 	free(panels);
 	
+	delwin(windowInfo);
 	endwin();
 	curs_set(1);
 	return 0;

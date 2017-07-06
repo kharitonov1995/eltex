@@ -1,4 +1,4 @@
-/*! \mainpage Some description of project File Manage 
+/*! \mainpage Some description of project File Manager
  *
  * \section intro_sec Introduction
  *
@@ -9,13 +9,10 @@
 
 #include "../include/list.h"
 
-const int MAX_PATH = 128; /**< Is maximum length of absolute path. */
-const int LENGTH_NAME = 32; /**< Is length name of elements in menu. */
-
 /**
- * @brief struct panel
+ * @brief Struct panel
  * 
- * Using for store information about each of panels
+ * Using for store information about each of panels.
  * 
  **/
 typedef struct _panel {
@@ -25,10 +22,23 @@ typedef struct _panel {
 	int startX; /**< Coordinate on x. */
 	int startY; /**< Coordinate on y. */
 	int countItems; /**< Count all elements on current directory. */
-	int countShowItems; /**< Count shows elements which are placed in panel#windowMenu. */
-	int beginPos; /**< Starting position in the list for page. Used when scrolling window; */
+	int beginPos; /**< Starting position in the list for page. */
+	int endPos; /**< Ending position in the list for page. */
 	int selectItem; /**< Position selectable item. */
 } panel;
+
+/**
+ * @brief Struct of arguments
+ * 
+ * Using for store and sending argumets to threads.
+ * 
+ **/
+struct argsThread {
+	char *targetPath; /**< Is absolute path to target file. */
+	char *sourcePath; /**< Is absolute path to source file. */
+	FILE *file; /**< Is file which needed copy. */
+	WINDOW *win; /**< Is window which showing field of input for target file. */
+};
 
 /**
  * initCurses() initialize all properties for terminal.
@@ -42,6 +52,12 @@ void initCurses();
  * @param int is start coordinate on X.
  */ 
 void initPanel(panel*, int, int);
+
+/**
+ * initWindowInfo() initialize window which showing navigation bar.
+ * @return created window.
+ */ 
+WINDOW *initWindowInfo();
 
 /**
  * initPanels(panel*, int, int, int) initialize all properties for multiply panel.
@@ -65,19 +81,20 @@ int getMaxShowLines(panel*);
  * @param int is start coordinate on Y.
  * @param int is start coordinate on X.
  * @param int is mark of select item for panel*.
- * @param char** is array of strings lenght LENGTH_NAME bytes each 
+ * @param char** is array of strings lenght 255 bytes each 
  */
 void drawMenuPanel(panel*, int, int, int, char**);
 
 /**
- * printToWindow(WINDOW*, char*, int, int, int) print @param char* on the @param WINDOW*.
- * @param WINDOW* is window on which needed showing @param char*.
+ * printToWindow(WINDOW*, char*, int, int, int) print char* on the WINDOW*.
+ * @param WINDOW* is window on which needed showing char*.
  * @param char* is string or character which needed print.
  * @param int is start coordinate on Y.
  * @param int is start coordinate on X.
  * @param int is color.
+ * @param int is attributes for text, if == 0 then attributes is off;
  */
-void printToWindow(WINDOW*, char*, int, int, int);
+void printToWindow(WINDOW*, char*, int, int, int, int);
 
 /**
  * destructPanel(panel*) free items menu of panel and destruct panel.
@@ -100,7 +117,7 @@ void execFile(char*, char*, int);
 int getCountFilesDir(char*);
 
 /**
- * getFilesDir(panel*) getting all files for @param panel*.
+ * getFilesDir(panel*) getting all files for panel*.
  * @param panel* is panel which must be filled with elements.
  * @return count elements of directory
  */
@@ -122,7 +139,33 @@ int isDirectory(char*);
 
 /**
  * isExecFile(char*) checking char* for executable file.
- * @param char* is is name file.
+ * @param char* it's name file.
  * @return 1 if char* is executable file, otherwise 0.
  */
 int isExecFile(char*);
+
+/**
+ * threadCopy(void*) is function of thread copy.
+ * @param void* is pointer on struct argsThread.
+ */
+void *threadCopy(void*);
+
+/**
+ * threadDraw(void*) is function of thread draw.
+ * @param void* is pointer on struct argsThread.
+ */
+void *threadDraw(void*);
+
+/**
+ * copyForm(panel*, char*) is function which build window copy and showing copy procces.
+ * @param panel* it's address of panel.
+ * @param char* is file name which must be copied.
+ */
+void copyForm(panel*, char*);
+
+/**
+ * trimSpaces(char*) is function which deleting spaces at end of string.
+ * @param char* is string which must be trimmed.
+ * @return pointer on the string without spaces.
+ */
+char *trimSpaces(char*);
