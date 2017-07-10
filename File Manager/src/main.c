@@ -1,12 +1,4 @@
-#include "../lib/manager.c"
-
-/*
-void sigWinch(int signo) {
-	struct winsize size;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, (char *) &size);
-	resizeterm(size.ws_row, size.ws_col);
-}
-*/
+#include "../include/manager.h"
 
 /*F1 to exit*/
 int main() {

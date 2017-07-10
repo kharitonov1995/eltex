@@ -1,4 +1,4 @@
-#include "../lib/malloc.c"
+#include "../include/malloc.h"
 
 int main() {
 	int *arr, *arr1, n = 10, i;
