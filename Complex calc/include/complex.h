@@ -1,5 +1,11 @@
+#define _GNU_SOURCE 1
 #include <dirent.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <dlfcn.h>
 
 #ifndef COMPLEX_H
 #define COMPLEX_H

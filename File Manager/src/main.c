@@ -1,14 +1,5 @@
-#include "../lib/manager.c"
+#include "../include/manager.h"
 
-/*
-void sigWinch(int signo) {
-	struct winsize size;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, (char *) &size);
-	resizeterm(size.ws_row, size.ws_col);
-}
-*/
-
-/*F1 to exit*/
 int main() {
 	const int startX = 1, startY = 1, COUNT_PANELS = 2;
 	panel *panels = NULL;

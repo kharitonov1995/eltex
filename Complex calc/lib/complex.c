@@ -1,11 +1,3 @@
-#define _GNU_SOURCE 1
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <dlfcn.h>
-
 #include "../include/complex.h"
 
 void scan(char *format, void *out) {

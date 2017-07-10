@@ -1,4 +1,8 @@
+#define _GNU_SOURCE 1
 #include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 typedef struct _chunk {
 	size_t size;

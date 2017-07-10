@@ -1,4 +1,4 @@
-#include "../lib/editor.c"
+#include "../include/editor.h"
 
 int main(int argc, char **argv) {
 	const int x = 1, y = 1, NROWS = 20, NCOLS = 90, BUF_LENGTH = 255;

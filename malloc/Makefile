@@ -4,7 +4,7 @@ SDIR = src
 
 CC = gcc
 
-objects = main.o
+objects = $(SDIR)/main.o $(LDIR)/malloc.o
 SUBDIRS = $(LDIR) $(SDIR) $(PDIR)
 
 vpath %.c src:lib
@@ -28,5 +28,5 @@ clean:
 		cd src 		&& $(MAKE) clean
 		cd lib		&& $(MAKE) clean
 		cd include	&& $(MAKE) clean
-		rm -rf malloc *.o
+		rm -rf malloc *.o latex html
 	

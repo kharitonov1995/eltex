@@ -6,7 +6,19 @@
  */
 #include <curses.h>
 #include <panel.h>
-
+#include <dirent.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <termios.h>
+#include <pthread.h>
+#include <form.h>
+#include <ctype.h>
 #include "../include/list.h"
 
 /**

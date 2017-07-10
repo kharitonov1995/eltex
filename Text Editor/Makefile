@@ -6,7 +6,7 @@ CFLAGS = -O2 -Wall -pedantic -ansi
 
 CC = gcc
 
-objects = main.o editor.o
+objects = $(SDIR)/main.o $(LDIR)/editor.o
 SUBDIRS = $(LDIR) $(SDIR)
 
 vpath %.c $(SDIR) : $(LDIR)
@@ -14,7 +14,9 @@ vpath %.o $(SDIR) : $(LDIR)
 vpath %.h $(IDIR)
 
 all: $(objects)
-		$(CC) -o editor $< $(CFLAGS) $(LFLAGS)
+		$(CC) -o editor $^ $(CFLAGS) $(LFLAGS)
+
+$(objects): prepare
 
 .PHONY: prepare $(SUBDIRS)
 prepare: $(SUBDIRS)
@@ -25,4 +27,6 @@ $(SUBDIRS):
 $(SDIR):$(LDIR)
 
 clean:
-	rm -rf *.o
+		cd src 	&& $(MAKE) clean
+		cd lib	&& $(MAKE) clean	
+		rm -rf *.o editor

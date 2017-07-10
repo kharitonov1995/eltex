@@ -5,3 +5,6 @@ vpath %.h ../include/
 		
 editor.o: editor.c editor.h
 		gcc -c $< $(CFLAGS) $(LFLAGS)
+
+clean:
+		rm -rf *.o editor

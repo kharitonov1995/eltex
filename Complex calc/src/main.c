@@ -1,4 +1,4 @@
-#include "../lib/complex.c"
+#include "../include/complex.h"
 
 char NAME_PLUGIN[] = "NAME_PLUGIN";
 

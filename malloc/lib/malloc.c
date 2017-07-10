@@ -1,8 +1,3 @@
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
 #include "../include/malloc.h"
 #define CHUNK_SIZE sizeof(Chunk)
 

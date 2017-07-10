@@ -6,7 +6,7 @@ CFLAGS = -Wall -O2 -pedantic -ansi
 LFLAGS = -lm -ldl
 CC = gcc
 
-objects = main.o
+objects = $(SDIR)/main.o $(LDIR)/complex.o
 SUBDIRS = $(LDIR) $(SDIR) $(PDIR)
 
 vpath %.c src:lib
@@ -15,8 +15,7 @@ vpath %.o src:lib
 all: $(objects) 
 		$(CC) -o Complex_calc $^ $(CFLAGS) $(LFLAGS)
 
-debug: $(objects) 
-		$(CC) -g $^ $(CFLAGS) $(LFLAGS)
+objects: prepare
 
 $(objects): prepare
 
