@@ -1,5 +1,6 @@
 #include "../include/manager.h"
 
+/*F1 to exit*/
 int main() {
 	const int startX = 1, startY = 1, COUNT_PANELS = 2;
 	panel *panels = NULL;
