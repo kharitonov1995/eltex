@@ -1,12 +1,14 @@
 #include "../include/chat.h"
 
+const char *fileName = "./server1";
+List *head = NULL;
+
 struct args {
 	List **list;
 	int msq;	
 };
 
 int createServer(int *serverMsq, int *clientsMsq, List **head) {
-	const char *fileName = "./server";
 	key_t key = 0;
 	pthread_t threadConnect;
 	struct args *arg;
@@ -33,31 +35,78 @@ void *listenConnection(void *arguments) {
 	struct args *arg = (struct args*) arguments;
 	struct msgServer msg;
 	
-	msg.type = 1L;
 	while(1) {
+		msg.type = HELLO_SERV;
 		msgrcv(arg->msq, &msg, sizeof(struct msgServer), msg.type, 0);
 		printf("New client with name %s is connected\n", msg.hello);
-		if (*(arg->list) == NULL) {
-			*(arg->list) = initList(msg.pid, msg.hello);
+		if (head == NULL) {
+			head = initList(msg.pid, msg.hello);
+			*(arg->list) = head;
 		} else {
 			*(arg->list) = addElem(msg.pid, msg.hello, *(arg->list));
 		}
+		memset(msg.hello, 0, strlen(msg.hello));
+		
+		msg.type = HELLO_CLIENT;
+		sprintf(msg.hello, "Hello from server\n");
+		msgsnd(arg->msq, &msg, sizeof(struct msgServer), 0);
+		memset(msg.hello, 0, strlen(msg.hello));
 	}
 	pthread_exit(0);
 }
 
-pid_t connectToServer(int *fifoServer) {
-	pid_t pidServer = 0;
+int connectToServer(char *nameClient) {
+	struct msgServer msg;
+	int msqId = 0;
+	key_t key;
 	
-	return pidServer;
+	key = ftok(fileName, 'S');
+	msqId = msgget(key, 0666);
+	msg.type = 1L;
+	msg.pid = (long) getpid();
+	sprintf(msg.hello, "%s", nameClient);
+	msgsnd(msqId, &msg, sizeof(struct msgServer), 0);
+	msgrcv(msqId, &msg, sizeof(struct msgServer), HELLO_CLIENT, 0);
+	
+	printf("%s\n", msg.hello);
+	return 0;
 }
 
 void processClient(int pidServer, int fifoServer) {
 	
 }
 
-int processServer(int fifoServer) {
-	
+int processServer(int clientsMsq) {
+	List *listClients = NULL, *tempList = NULL;
+	while(1) {
+		listClients = head;
+		while(listClients != NULL) {
+			/*getchar();*/
+			printf("type = %ld\n", listClients->type);
+			msgrcv(
+				clientsMsq, 
+				&listClients, 
+				sizeof(List),
+				listClients->type, 
+				IPC_NOWAIT);
+			if (errno == ENOMSG) {	
+				listClients = listClients->next;
+			} else {
+				printf("принято: %s\n", listClients->message);
+				tempList = head;
+				while(tempList != NULL) {
+					/*memcpy(
+						tempList->message,
+						listClients->message,
+						strlen(listClients->message));*/
+					sprintf(tempList->message, "qweqe");
+					msgsnd(clientsMsq, &tempList, sizeof(List), IPC_NOWAIT);
+				}
+			}
+		}
+		sleep(2);
+		printf("wake up\n");
+	}
 	return 0;
 }
 

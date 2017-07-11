@@ -1,10 +1,13 @@
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #pragma once
 
 typedef struct _list {
 	long type;
-	char *name;
+	char name[32];
+	char message[255];
 	struct _list *next;
 } List;
 

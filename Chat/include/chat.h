@@ -17,16 +17,19 @@
 
 #ifndef CHAT_H
 #define CHAT_H
+#define HELLO_SERV 1L
+#define HELLO_CLIENT 2L
+extern List *head;
 
 struct msgServer {
 	long type;
-	int pid;
+	long pid;
 	char hello[32];
 };
 
 int createServer(int*, int*, List**);
 void *listenConnection(void*);
-pid_t connectToServer(int*);
+int connectToServer(char*);
 void processClient(int, int);
 int processServer(int);
 char *getCurrentTime();

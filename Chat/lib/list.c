@@ -1,3 +1,4 @@
+#include <string.h>
 #include "../include/list.h"
 
 List *initList(long type, char *string) {
@@ -5,7 +6,7 @@ List *initList(long type, char *string) {
 	
 	list = malloc(sizeof(List));
 	list->type = type;
-	list->name = string;
+	memcpy(list->name, string, strlen(string));
 	list->next = NULL;
 	
 	return list;
@@ -17,7 +18,7 @@ List *addElem(long type, char *string, List *list) {
 	temp = malloc(sizeof(List));
 	p = list->next;
 	list->next = temp;
-	temp->name = string;
+	memcpy(temp->name, string, strlen(string));
 	temp->type = type;
 	temp->next = p;
 	
