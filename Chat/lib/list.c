@@ -25,17 +25,52 @@ List *addElem(long type, char *string, List *list) {
 	return temp;
 }
 
-List *delElem(List *list, List *root) {
-	List *temp;
+List *delElem(List *elem, List *head) {
+	 List *temp, *prev;
+	 
+    if(head == elem) {
+        if(head->next == NULL) {
+            free(head);
+            return NULL;
+        }
+        
+        head->type = head->next->type;
+        memcpy(head->name, head->next->name, strlen(head->next->name));
+		
+        elem = head->next;
+ 
+        head->next = head->next->next;
+ 
+        free(elem);
+ 
+        return head;
+    }
+ 
+	prev = head;
+    while(prev->next != NULL && prev->next != elem)
+        prev = prev->next;
+ 
+    if(prev->next == NULL) {
+        return head;
+    }
+ 
+    prev->next = prev->next->next;
+    free(elem);
+ 
+    return head;
+}
+
+List *searchElem(long type, List *head) {
+	List *list = NULL;
 	
-	temp = root;
-	while (temp->next != list) {
-		temp = temp->next;
+	list = head;
+	while (list != NULL) {
+		if (list->type == type) {
+			return list;
+		}
+		list = list->next;
 	}
-	temp->next = list->next;
-	free(list);
-	
-	return temp;
+	return NULL;
 }
 
 /* Возвращает новый корень списка */

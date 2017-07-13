@@ -2,21 +2,33 @@
 
 int main() {
 	List *list = NULL, *temp = NULL;
-	int serverMsq = 0, clientsMsq = 0;
+	int countQueue = 3, i;
+	struct queueId *queues = NULL;
 	
-	if (createServer(&serverMsq, &clientsMsq, &list) < 0) {
+	queues = malloc(sizeof(struct queueId) * countQueue);
+	
+	if (createServer(countQueue, queues) < 0) {
 		printf("Can't create server\n");
-		msgctl(serverMsq, IPC_RMID, NULL);
-		msgctl(clientsMsq, IPC_RMID, NULL);
+		for (i = 0; i < countQueue; i++) {
+			msgctl(queues[i].msqId, IPC_RMID, NULL);
+		}
 		exit(EXIT_FAILURE);
 	}
-	while(1) {
+	processServer(queues);
+	/*while(1) {
 		sleep(2);
-		if (head != NULL) break;
+		pthread_mutex_lock(&mutex);
+		list = head;
+		while(list != NULL) {
+			printf("type = %ld\n", list->type);
+			list = list->next;
+		}
+		pthread_mutex_unlock(&mutex);
+	}*/
+	for (i = 0; i < countQueue; i++) {
+		msgctl(queues[i].msqId, IPC_RMID, NULL);
 	}
-	processServer(clientsMsq);
-	msgctl(serverMsq, IPC_RMID, NULL);
-	msgctl(clientsMsq, IPC_RMID, NULL);
+	free(queues);
 	exit(EXIT_SUCCESS);
 }
 /*while(1) {

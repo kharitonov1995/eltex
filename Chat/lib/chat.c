@@ -2,112 +2,221 @@
 
 const char *fileName = "./server1";
 List *head = NULL;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-struct args {
-	List **list;
-	int msq;	
-};
-
-int createServer(int *serverMsq, int *clientsMsq, List **head) {
-	key_t key = 0;
+int createServer(int count, struct queueId ids[]) {
 	pthread_t threadConnect;
-	struct args *arg;
+	int i;
 	
-	key = ftok(fileName, 'S');
-	printf("%x\n", key);
-	*serverMsq = msgget(key, IPC_CREAT | 0666);
-	if (*serverMsq == 0)
-		return -1;
-		
-	key = ftok(fileName, 'C');
-	*clientsMsq = msgget(key, IPC_CREAT | 0666);
-	if (*clientsMsq == 0)
-		return -1;
+	for (i = 0; i < count; i++) {
+		ids[i].key = ftok(fileName, (char) i + 1);
+		ids[i].msqId = msgget(ids[i].key, IPC_CREAT | 0666);
+		if (ids[i].msqId < 0) {
+			return -1;
+		}
+	}
 	
-	arg = malloc(sizeof(struct args));
-	arg->list = head;
-	arg->msq = *serverMsq;
-	pthread_create(&threadConnect, NULL, listenConnection, arg);
+	pthread_create(&threadConnect, NULL, listenConnection, &ids[0].msqId);
 	return 0;
 }
 
 void *listenConnection(void *arguments) {
-	struct args *arg = (struct args*) arguments;
+	int msqId = *((int*) arguments);
 	struct msgServer msg;
+	List *list = NULL, *delClient = NULL, *tempList = NULL;
 	
 	while(1) {
-		msg.type = HELLO_SERV;
-		msgrcv(arg->msq, &msg, sizeof(struct msgServer), msg.type, 0);
-		printf("New client with name %s is connected\n", msg.hello);
-		if (head == NULL) {
-			head = initList(msg.pid, msg.hello);
-			*(arg->list) = head;
-		} else {
-			*(arg->list) = addElem(msg.pid, msg.hello, *(arg->list));
-		}
-		memset(msg.hello, 0, strlen(msg.hello));
+		msgrcv(msqId, &msg, sizeof(struct msgServer), HELLO_SERV, 0);
+		pthread_mutex_lock(&mutex);
+		printf("connect: %d\n", msg.connect);
 		
-		msg.type = HELLO_CLIENT;
-		sprintf(msg.hello, "Hello from server\n");
-		msgsnd(arg->msq, &msg, sizeof(struct msgServer), 0);
+		if (msg.connect == 0) {
+			if (head != NULL) {
+				delClient = searchElem(msg.typeClient, head);
+				head = delElem(delClient, head);
+			}
+			sprintf(msg.hello, "GG BB\n");
+			msg.type = HELLO_CLIENT + msg.typeClient;
+			msgsnd(msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
+		} else {
+			printf("New client with name %s is connected\n", msg.hello);
+			if (head == NULL) {
+				head = initList(msg.typeClient, msg.hello);
+				list = head;
+			} else {
+				list = addElem(msg.typeClient, msg.hello, list);
+			}
+			snprintf(msg.hello, (size_t) 32, "Hello %s", list->name);
+		}
+		pthread_mutex_unlock(&mutex);
+		tempList = head;
+		
+		while (tempList != NULL) {
+			msg.type = HELLO_CLIENT + tempList->type;
+			msgsnd(msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
+			tempList = tempList->next;
+		}
 		memset(msg.hello, 0, strlen(msg.hello));
 	}
 	pthread_exit(0);
 }
 
-int connectToServer(char *nameClient) {
+void *listenConnectionClient(void *arguments) {
+	int msqId = *((int*) arguments);
 	struct msgServer msg;
-	int msqId = 0;
-	key_t key;
+	pid_t pid;
+	List *list = NULL, *delClient = NULL;
 	
-	key = ftok(fileName, 'S');
-	msqId = msgget(key, 0666);
-	msg.type = 1L;
-	msg.pid = (long) getpid();
+	pid = getpid();
+	while(1) {
+		msgrcv(msqId, &msg, sizeof(struct msgServer), HELLO_CLIENT + pid, 0);
+		pthread_mutex_lock(&mutex);
+		if (msg.connect == 0) {
+			if (head != NULL) {
+				delClient = searchElem(msg.typeClient, head);
+				printf("Clients with name %s is disconnected\n", delClient->name);
+				head = delElem(delClient, head);
+				
+				if ((long) pid == msg.typeClient) {
+					clearList(head);
+					msg.type = CLOSE_CLIENT;
+					pthread_mutex_unlock(&mutex);
+					msgsnd(msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
+					break;
+				}
+			}
+		} else {
+			printf("New client with name %s is connected\n", msg.hello);
+			if (head == NULL) {
+				head = initList(msg.typeClient, msg.hello);
+				list = head;
+			} else {
+				list = addElem(msg.typeClient, msg.hello, list);
+			}
+		}
+		pthread_mutex_unlock(&mutex);
+		memset(msg.hello, 0, strlen(msg.hello));
+	}
+	pthread_exit(EXIT_SUCCESS);
+}
+
+int connectToServer(int count, struct queueId ids[], char *nameClient, long type) {
+	struct msgServer msg;
+	pthread_t threadClient;
+	int i;
+	
+	for (i = 0; i < count; i++) {
+		ids[i].key = ftok(fileName, (char) i + 1);
+		ids[i].msqId = msgget(ids[i].key, 0);
+		if (ids[i].msqId < 0) {
+			return -1;
+		}
+	}
+	
+	msg.type = HELLO_SERV;
+	msg.typeClient = type;
+	msg.connect = 1;
 	sprintf(msg.hello, "%s", nameClient);
-	msgsnd(msqId, &msg, sizeof(struct msgServer), 0);
-	msgrcv(msqId, &msg, sizeof(struct msgServer), HELLO_CLIENT, 0);
-	
+	msgsnd(ids[0].msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
+	pthread_create(&threadClient, NULL, listenConnectionClient, &ids[0].msqId);
 	printf("%s\n", msg.hello);
 	return 0;
 }
 
-void processClient(int pidServer, int fifoServer) {
-	
-}
 
-int processServer(int clientsMsq) {
-	List *listClients = NULL, *tempList = NULL;
+
+void processClient(struct queueId queues[], long typeClient, char *nameClient) {
+	/*List *listClients = NULL, *tempList = NULL;
+	struct msgClient _msgClient;
+	struct msgServer _msgServer;
+	
+	head = initList(typeClient, nameClient);
+	
 	while(1) {
 		listClients = head;
 		while(listClients != NULL) {
-			/*getchar();*/
 			printf("type = %ld\n", listClients->type);
 			msgrcv(
-				clientsMsq, 
-				&listClients, 
-				sizeof(List),
+				msqIds[1].msqId, 
+				&msg, 
+				sizeof(struct msgClient),
 				listClients->type, 
 				IPC_NOWAIT);
-			if (errno == ENOMSG) {	
-				listClients = listClients->next;
-			} else {
-				printf("принято: %s\n", listClients->message);
+			if (errno != ENOMSG) {
 				tempList = head;
 				while(tempList != NULL) {
-					/*memcpy(
-						tempList->message,
-						listClients->message,
-						strlen(listClients->message));*/
-					sprintf(tempList->message, "qweqe");
-					msgsnd(clientsMsq, &tempList, sizeof(List), IPC_NOWAIT);
+					msg.type = tempList->type;
+					msgsnd(
+						msqIds[2].msqId,
+						&msg,
+						sizeof(struct msgClient),
+						0);
+					tempList = tempList->next;
 				}
+			} else {
+				errno = 0;
 			}
+			
+			listClients = listClients->next;
 		}
+		
+		pthread_mutex_unlock(&mutex);
 		sleep(2);
+		printf("wake up\n");
+	}*/
+}
+
+int processServer(struct queueId msqIds[]) {
+	List *listClients = NULL, *tempList = NULL;
+	struct msgClient msg;
+	struct msqid_ds qstatus;
+	
+	while(1) {
+		pthread_mutex_lock(&mutex);
+		listClients = head;
+		
+		while(listClients != NULL) {
+			printf("type = %ld\n", listClients->type);
+			msgrcv(
+				msqIds[1].msqId, 
+				&msg, 
+				sizeof(struct msgClient),
+				listClients->type, 
+				IPC_NOWAIT);
+			if (errno != ENOMSG) {
+				tempList = head;
+				while(tempList != NULL) {
+					msg.type = tempList->type;
+					msgsnd(
+						msqIds[2].msqId,
+						&msg,
+						sizeof(struct msgClient),
+						0);
+					tempList = tempList->next;
+				}
+			} else {
+				errno = 0;
+			}
+			listClients = listClients->next;
+		}
+		
+		pthread_mutex_unlock(&mutex);
+		sleep(1);
 		printf("wake up\n");
 	}
 	return 0;
+}
+
+void disconnectClient(struct queueId queues[], char *nameClient, long type) {
+	struct msgServer msg;
+	
+	msg.type = HELLO_SERV;
+	msg.typeClient = type;
+	msg.connect = 0;
+	msgsnd(queues[0].msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
+	msgrcv(queues[0].msqId, &msg, sizeof(struct msgServer), CLOSE_CLIENT, 0);
+	
+	printf("BYE!\n");
 }
 
 char *getCurrentTime() {

@@ -6,13 +6,13 @@
 
 typedef struct _list {
 	long type;
-	char name[32];
-	char message[255];
 	struct _list *next;
+	char name[32];
 } List;
 
 List *initList(long, char*);
 List *addElem(long, char*, List*);
+List *searchElem(long, List*);
 List *delElem(List*, List*);
 List *swap(List*, List*, List*);
 int sizeList(List*);
