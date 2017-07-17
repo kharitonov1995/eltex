@@ -191,6 +191,7 @@ int listenerTCP(int sock, socklen_t sizeAddr) {
 	int socketClient = 0, status = 0, sizeBuf = 32;
 	char *buffer;
 	pid_t pid;
+	buffer = calloc(sizeBuf, sizeof(char));
 	
 	while(1) {
 		socketClient = accept(sock, &client, &sizeAddr);
@@ -204,7 +205,6 @@ int listenerTCP(int sock, socklen_t sizeAddr) {
 			return -1;
 		}
 		if (pid == 0) {
-			buffer = calloc(sizeBuf, sizeof(char));
 			status = recv(socketClient, buffer, sizeBuf, 0);
 			if (status < 0) {
 				perror("recv()");
@@ -224,6 +224,7 @@ int listenerTCP(int sock, socklen_t sizeAddr) {
 				return -1;
 			}
 			close(socketClient);
+			free(buffer);
 			exit(EXIT_SUCCESS);
 		}
 		close(socketClient);
@@ -235,26 +236,40 @@ int listenerTCP(int sock, socklen_t sizeAddr) {
 
 void *threadClient(void *args) {
 	struct msgServer *msg = (struct msgServer *) args;
+	struct sockaddr_in addrServer;
 	char *buffer;
 	int sizeBuffer = 0, sock = 0;
+	socklen_t sizeAddr;
 	
-	printf("num = %ld\n", msg->type);
-	
- 	sock = connectToServerTCP(&(msg->addrClient));
 	sizeBuffer = ARRAY_SIZE(msg->message);
 	buffer = calloc(sizeBuffer, sizeof(char));
-	if (sock < 0) {
-		exit(EXIT_FAILURE);
+	sizeAddr = sizeof(addrServer);
+	if (msg->type == 1) {
+		sock = connectToServerUDP(&addrServer, msg->message);
+		if (sock < 0) {
+			exit(EXIT_FAILURE);
+		}
+		if (recvfrom(sock, buffer, sizeBuffer, 0, &addrServer, &sizeAddr) < 0) {
+			exit(EXIT_FAILURE);
+		}
+	} else if (msg->type == 2) {
+		sock = connectToServerTCP(&addrServer);
+		
+		if (sock < 0) {
+			exit(EXIT_FAILURE);
+		}
+		if (send(sock, msg->message, strlen(msg->message), 0) < 0) {
+			perror("send()");
+			exit(EXIT_FAILURE);
+		}
+		if (recv(sock, buffer, sizeBuffer, 0) < 0) {
+			perror("recv()");
+			exit(EXIT_FAILURE);
+		}
 	}
-	if (send(sock, msg->message, strlen(msg->message), 0) < 0) {
-		perror("send()");
-		exit(EXIT_FAILURE);
-	}
-	if (recv(sock, buffer, sizeBuffer, 0) < 0) {
-		perror("recv()");
-		exit(EXIT_FAILURE);
-	}
+ 	
 	printf("%s\n", buffer);
+	free(buffer);
 	pthread_exit(0);
 }
 
