@@ -25,39 +25,26 @@ List *addElem(long type, char *string, List *list) {
 	return temp;
 }
 
-List *delElem(List *elem, List *head) {
-	 List *temp, *prev;
+void delElem(List *elem, List **head) {
+	List *temp, *next;
 	 
-    if(head == elem) {
-        if(head->next == NULL) {
-            free(head);
-            return NULL;
-        }
-        
-        head->type = head->next->type;
-        memcpy(head->name, head->next->name, strlen(head->next->name));
-		
-        elem = head->next;
+	temp = *head; 
+    if(temp == elem) {
+        *head = temp->next; 
+        free(temp);
+        return;
+    }
+    
+    while(temp->next != NULL && temp->next != elem)
+        temp = temp->next;
  
-        head->next = head->next->next;
- 
-        free(elem);
- 
-        return head;
+    if(temp->next == NULL) {
+        return;
     }
  
-	prev = head;
-    while(prev->next != NULL && prev->next != elem)
-        prev = prev->next;
- 
-    if(prev->next == NULL) {
-        return head;
-    }
- 
-    prev->next = prev->next->next;
-    free(elem);
- 
-    return head;
+    next = temp->next->next;
+    free(temp->next);
+    temp->next = next;
 }
 
 List *searchElem(long type, List *head) {

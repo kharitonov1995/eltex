@@ -21,6 +21,8 @@
 #define HELLO_CLIENT 2L
 #define CLOSE_SERV 3L
 #define CLOSE_CLIENT 4L
+#define GET_CLIENTS 5L
+
 extern List *head;
 extern pthread_mutex_t mutex;
 
@@ -33,6 +35,7 @@ struct msgServer {
 	long type;
 	int typeClient;
 	int connect;
+	int countClients;
 	char hello[32];
 };
 

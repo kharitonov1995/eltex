@@ -13,7 +13,7 @@ typedef struct _list {
 List *initList(long, char*);
 List *addElem(long, char*, List*);
 List *searchElem(long, List*);
-List *delElem(List*, List*);
+void delElem(List*, List**);
 List *swap(List*, List*, List*);
 int sizeList(List*);
 void clearList(List*);
