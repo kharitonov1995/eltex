@@ -186,11 +186,194 @@ int listenerUDP(struct queueId queues[], int sock) {
 	return 0;
 }
 
-int listenerTCP(int sock, socklen_t sizeAddr) {
+int listenerTCP_UDP(int *sockets, int type) {
+	struct sockaddr_in client;
+	struct timeval tv;
+	struct pollfd *pollFds = NULL;
+	struct epoll_event *events = NULL, *newEvents = NULL;
+	int socketClient = 0, status = 0, sizeBuffer = 32, i = 0, epollFd = 0;
+	int maxFd = 0, count = 0, retval = 0, isUDP = 0, nEvents = 0;
+	char *buffer;
+	socklen_t sizeAddr;
+	fd_set rdSet;
+	const int maxEvents = 10;
+	
+	sizeAddr = sizeof(client);
+	buffer = calloc(sizeBuffer, sizeof(char));
+	maxFd = sockets[0] > sockets[1] ? sockets[0] : sockets[1]; 
+	count = ARRAY_SIZE(sockets);
+	
+	while(1) {	
+		if (type == 1) {	
+			FD_ZERO(&rdSet);
+			for (i = 0; i < count; i++) {
+				FD_SET(sockets[i], &rdSet);
+			}
+			tv.tv_sec = 10;
+			tv.tv_usec = 0;
+			
+			retval = select(maxFd + 1, &rdSet, NULL, NULL, &tv);
+			if (retval < 0) {
+				perror("select()");
+				return -1;
+			}
+			if (!retval) {
+				printf("No receive data in five seconds\n");
+				break;
+			} else {
+				if (FD_ISSET(sockets[0], &rdSet)) {
+					isUDP = 0;
+				} else if (FD_ISSET(sockets[1], &rdSet)) {
+					isUDP = 1;
+				}
+			}
+		} else if (type == 2) {
+			if (pollFds == NULL) {
+				pollFds = malloc(sizeof(struct pollfd) * count);
+				for (i = 0; i < count; i++) {
+					pollFds[i].fd = sockets[i];
+					pollFds[i].events = POLLIN;
+				}
+			}
+			
+			retval = poll(pollFds, count, 10000);
+			if (retval < 0) {
+				perror("poll()");
+				return -1;
+			}
+			if (!retval) {
+				printf("No receive data in five seconds\n");
+				break;
+			} else {
+				if (pollFds[0].revents & POLLIN) {
+					isUDP = 0;
+				} else if (pollFds[1].revents & POLLIN) {
+					isUDP = 1;
+				}
+			}
+		} else if (type == 3) {
+			if (epollFd == 0) {
+				epollFd = epoll_create(count);
+				events = malloc(sizeof(struct epoll_event) * count);
+				newEvents = malloc(sizeof(struct epoll_event) * count);
+				
+				for (i = 0; i < count; i++) {
+					events[i].data.fd = sockets[i];
+					events[i].events = EPOLLIN;
+					
+					retval = epoll_ctl(
+								epollFd, 
+								EPOLL_CTL_ADD, 
+								sockets[i], 
+								&events[i]);
+					if (retval < 0) {
+						perror("epoll_ctl()");
+						return -1;
+					}
+				}
+			}
+			
+			nEvents = epoll_wait(epollFd, newEvents, maxEvents, 10000);
+			if (nEvents < 0) {
+				perror("epoll_wait()");
+				return -1;
+			}
+			
+			if (nEvents > 0) {
+				for (i = 0; i < nEvents; i++) {
+					if (newEvents[i].data.fd == sockets[0]) {
+						isUDP = 0;
+					} else if (newEvents[i].data.fd == sockets[1]) {
+						isUDP = 1;
+					}
+				}
+			} else {
+				printf("No receive data in five seconds\n");
+				break;
+			}
+		}
+		
+		if (!isUDP) {
+			socketClient = accept(sockets[0], &client, &sizeAddr);
+			if (socketClient < 0) {
+				perror("accept()");
+				return -1;
+			}
+			
+			status = recv(socketClient, buffer, sizeBuffer, 0);
+			if (status < 0) {
+				perror("recv()");
+				return -1;
+			}
+			
+			printf("Client with name: %s from TCP requested time. %s:%d\n", 
+					buffer, 
+					inet_ntoa(client.sin_addr), 
+					ntohs(client.sin_port));
+			
+			getCurrentTime(buffer, sizeBuffer);
+			
+			status = send(socketClient, buffer, sizeBuffer, 0);
+			if (status < 0) {
+				perror("send()");
+				return -1;
+			}
+			close(socketClient);
+		} else {
+			status = recvfrom(
+						sockets[1], 
+						buffer, 
+						sizeBuffer, 
+						0, 
+						&client, 
+						&sizeAddr);
+			if (status < 0) {
+				perror("recvfrom()");
+				return -1;
+			}
+			printf("Client with name: %s from UDP requested time. %s:%d\n", 
+					buffer, 
+					inet_ntoa(client.sin_addr), 
+					ntohs(client.sin_port));
+			
+			getCurrentTime(buffer, sizeBuffer);
+			status = sendto(
+						sockets[1],
+						buffer, 
+						sizeBuffer, 
+						0, 
+						&client, 
+						sizeAddr);
+			if (status < 0) {
+				perror("sendto()");
+				return -1;
+			}
+		}
+		bzero(buffer, sizeBuffer);
+	}
+	
+	for (i = 0; i < count; i++) {
+		close(sockets[i]);
+	}
+	if (epollFd != 0) {
+		free(events);
+		free(newEvents);
+		close(epollFd);
+	}
+	if (pollFds != NULL) 
+		free(pollFds);
+	free(buffer);
+	return 0;
+}
+
+int listenerTCP(int sock) {
 	struct sockaddr_in client;
 	int socketClient = 0, status = 0, sizeBuf = 32;
 	char *buffer;
 	pid_t pid;
+	socklen_t sizeAddr;
+	
+	sizeAddr = sizeof(client);
 	buffer = calloc(sizeBuf, sizeof(char));
 	
 	while(1) {
@@ -274,10 +457,10 @@ void *threadClient(void *args) {
 }
 
 void getCurrentTime(char *buf, const int size) {
-	time_t rawtime;
-	struct tm *timeinfo;
+	time_t rawTime;
+	struct tm *timeInfo;
 
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(buf, size, "%d.%m.%y %H:%M", timeinfo);
+	time(&rawTime);
+	timeInfo = localtime(&rawTime);
+	strftime(buf, size, "%d.%m.%y %H:%M", timeInfo);
 }

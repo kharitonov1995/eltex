@@ -2,13 +2,13 @@
 
 int main(int argc, char *argv[]) {
 	struct msgServer msg;
-	int sizeMessage, i, count = 1000, typeServer = 0;
+	int sizeMessage, i, count = 100, typeServer = 0;
 	char *nameClient = NULL;
 	char *buffer = NULL;
 	pthread_t *threads = NULL;
 	
 	if (argc < 3) {
-		printf("Please input name and type server:\n1 - UDP\n2 - TCP");
+		printf("Please input name and type server:\n1 - UDP\n2 - TCP\n");
 		exit(EXIT_FAILURE);
 	}
 	
