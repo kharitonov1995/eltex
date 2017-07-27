@@ -21,7 +21,9 @@
 #define IP_ADDR "192.168.43.97"
 #define PORT 8888
 #define CLIENT_PORT 7777
-#define DEFAULT_INTERFACE "wlp3s0"
+#define WIFI_INTERFACE "wlp3s0"
+#define ETH_INTERFACE "enp4s0"
+#define LO_INTERFACE "lo"
 
 extern int sizeBuf; 
 

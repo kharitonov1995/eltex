@@ -46,8 +46,7 @@ void addUdpHeader(unsigned char *buffer) {
 	udph = malloc(sizeof(struct udphdr));
 	
 	bzero(udph, sizeof(struct udphdr));
-	
-	
+		
 	udph->source = htons(CLIENT_PORT);
 	udph->dest = htons(PORT);
 	udph->len = htons(sizeof(struct udphdr*) + sizeBuf);
@@ -61,7 +60,7 @@ int addIpHeader(int sock, unsigned char *buffer) {
 	int status = 0, flag = 1;
 	struct iphdr *iph = NULL;
 	
-	if (sock != -1) {
+	if (sock < 0) {
 		status = setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &flag, sizeof(flag));
 		if(status < 0) {
 			perror("setsockopt()");
@@ -75,7 +74,7 @@ int addIpHeader(int sock, unsigned char *buffer) {
 	iph->ihl = 5;
     iph->version = 4;
     iph->tos = 0;
-    iph->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + sizeBuf;
+    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + sizeBuf);
     iph->id = htons(12345);
     iph->frag_off = 0;
     iph->ttl = 255;
@@ -83,7 +82,7 @@ int addIpHeader(int sock, unsigned char *buffer) {
     iph->check = 0;
     iph->saddr = inet_addr(IP_ADDR);
     iph->daddr = inet_addr(IP_ADDR);
-	
+		
 	memcpy(buffer, iph, sizeof(struct iphdr));
 	free(iph);
 	return 0;
@@ -201,9 +200,13 @@ int clientRawEthernet() {
 	struct ethhdr *eh = NULL;
 	struct sockaddr_ll ethernet;
     struct ifreq ifrIndx;
-    struct ifreq ifrMAC;
     unsigned char *buffer = NULL;
-    unsigned char mac[6] = {0x74, 0xE5, 0x43, 0x47, 0x93, 0x27};
+    unsigned char macWifi[6] = {0x74, 0xE5, 0x43, 0x47, 0x93, 0x27};
+    /*unsigned char macEth[6] = {0xF0, 0xDE, 0xF1, 0xFE, 0xED, 0x58};*/
+    unsigned char macLo[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	char nameInterface[32];
+    
+	strncpy(nameInterface, LO_INTERFACE, strlen(LO_INTERFACE));
 	
 	sock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if(sock < 0) {
@@ -212,16 +215,9 @@ int clientRawEthernet() {
 	}
 	
 	memset(&ifrIndx, 0, sizeof(struct ifreq));
-	strncpy(ifrIndx.ifr_name, DEFAULT_INTERFACE, strlen(DEFAULT_INTERFACE));
+	strncpy(ifrIndx.ifr_name, nameInterface, strlen(nameInterface));
 	if (ioctl(sock, SIOCGIFINDEX, &ifrIndx) < 0) {
 	    perror("ioctl(SIOCGIFINDEX)");
-	    return -1;
-	}
-	
-	memset(&ifrMAC, 0, sizeof(struct ifreq));
-	strncpy(ifrMAC.ifr_name, DEFAULT_INTERFACE, strlen(DEFAULT_INTERFACE));
-	if (ioctl(sock, SIOCGIFHWADDR, &ifrMAC) < 0) {
-	    perror("ioctl(SIOCGIFHWADDR)");
 	    return -1;
 	}
 	
@@ -232,57 +228,36 @@ int clientRawEthernet() {
 					&ifrIndx,
 					sizeof(ifrIndx));
 	if (status < 0)	{
-		perror("SO_BINDTODEVICE");
+		perror("setsockopt(SO_BINDTODEVICE)");
 		close(sock);
 		exit(EXIT_FAILURE);
 	}
-	
-	bind(sock, (struct sockaddr *) &ethernet, sizeof(struct sockaddr_ll));
 	
 	totalSize = sizeBuf + sizeof(struct udphdr) 
 				+ sizeof(struct iphdr) + sizeof(struct ethhdr);
 	eh = malloc(sizeof(struct ethhdr));
 	buffer = calloc(totalSize, sizeof(unsigned char)); 
-	/*
-	memcpy(eh, ifrMAC.ifr_hwaddr.sa_data, ETH_ALEN);
-	memcpy(eh + ETH_ALEN, ifrMAC.ifr_hwaddr.sa_data + ETH_ALEN, ETH_ALEN);
-	*/
-	
-	memcpy(eh->h_source, mac, sizeof(mac));
-	memcpy(eh->h_dest, mac, sizeof(mac));
-	
-	/*eh->h_source[0] = ifrMAC.ifr_hwaddr.sa_data[0];
-	eh->h_source[1] = ifrMAC.ifr_hwaddr.sa_data[1];
-	eh->h_source[2] = ifrMAC.ifr_hwaddr.sa_data[2];
-	eh->h_source[3] = ifrMAC.ifr_hwaddr.sa_data[3];
-	eh->h_source[4] = ifrMAC.ifr_hwaddr.sa_data[4];
-	eh->h_source[5] = ifrMAC.ifr_hwaddr.sa_data[5];
-	eh->h_dest[0] = ifrMAC.ifr_hwaddr.sa_data[0];
-	eh->h_dest[1] = ifrMAC.ifr_hwaddr.sa_data[1];
-	eh->h_dest[2] = ifrMAC.ifr_hwaddr.sa_data[2];
-	eh->h_dest[3] = ifrMAC.ifr_hwaddr.sa_data[3];
-	eh->h_dest[4] = ifrMAC.ifr_hwaddr.sa_data[4];
-	eh->h_dest[5] = ifrMAC.ifr_hwaddr.sa_data[5];
-	* */
-	eh->h_proto = 0x00;
+		
+	memcpy(eh->h_source, macLo, sizeof(macLo));
+	memcpy(eh->h_dest, macWifi, sizeof(macWifi));
+	eh->h_proto = htons(ETH_P_IP);
 	
 	memcpy(buffer, eh, sizeof(struct ethhdr));
 	addIpHeader(-1, buffer + sizeof(struct ethhdr));
 	addUdpHeader(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr));
+	memcpy(
+		buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), 
+		"HELLO", 
+		strlen("HELLO"));
 	
 	ethernet.sll_family = AF_PACKET;	
 	ethernet.sll_protocol = htons(ETH_P_IP);	
-	ethernet.sll_ifindex  = ifrIndx.ifr_ifindex;
-	ethernet.sll_hatype   = ARPHRD_ETHER;
-	ethernet.sll_pkttype  = PACKET_OTHERHOST;
-	ethernet.sll_halen    = ETH_ALEN;		
+	ethernet.sll_ifindex = ifrIndx.ifr_ifindex;
+	ethernet.sll_hatype = ARPHRD_ETHER;
+	ethernet.sll_pkttype = PACKET_OTHERHOST;
+	ethernet.sll_halen = ETH_ALEN;
 	
-	ethernet.sll_addr[0]  = ifrMAC.ifr_hwaddr.sa_data[0];		
-	ethernet.sll_addr[1]  = ifrMAC.ifr_hwaddr.sa_data[1];		
-	ethernet.sll_addr[2]  = ifrMAC.ifr_hwaddr.sa_data[2];
-	ethernet.sll_addr[3]  = ifrMAC.ifr_hwaddr.sa_data[3];
-	ethernet.sll_addr[4]  = ifrMAC.ifr_hwaddr.sa_data[4];
-	ethernet.sll_addr[5]  = ifrMAC.ifr_hwaddr.sa_data[5];
+	memcpy(ethernet.sll_addr, macWifi, sizeof(macWifi));
 	ethernet.sll_addr[6]  = 0x00;
 	ethernet.sll_addr[7]  = 0x00;
 	
@@ -298,6 +273,22 @@ int clientRawEthernet() {
 		perror("sendto()");
 		return -1;
 	}
+	
+	bzero(buffer, totalSize);
+	status = recvfrom(
+				sock, 
+				buffer, 
+				totalSize, 
+				0, 
+				NULL, 
+				NULL);
+	if (status < 0) {
+		perror("recvfrom()");
+		return -1;
+	}
+	
+	printf("Recv %s\n", 
+	buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr));
 	
 	return sock;
 }
@@ -330,8 +321,6 @@ int listenerUDP(int sock) {
 			perror("sendto()");
 			return -1;
 		}
-		
-		bzero(buffer, sizeBuf);
 	}
 	close(sock);
 	free(buffer);
