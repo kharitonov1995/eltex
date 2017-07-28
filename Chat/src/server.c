@@ -1,23 +1,22 @@
 #include "../include/chat.h"
 
 int main() {
-	List *list = NULL;
-	int serverMsq = 0, clientsMsq = 0;
+	int countQueue = 3, i;
+	struct queueId *queues = NULL;
 	
-	if (createServer(&serverMsq, &clientsMsq, &list) < 0) {
+	queues = malloc(sizeof(struct queueId) * countQueue);
+	
+	if (createServer(countQueue, queues) < 0) {
 		printf("Can't create server\n");
-		msgctl(serverMsq, IPC_RMID, NULL);
-		msgctl(clientsMsq, IPC_RMID, NULL);
+		for (i = 0; i < countQueue; i++) {
+			msgctl(queues[i].msqId, IPC_RMID, NULL);
+		}
 		exit(EXIT_FAILURE);
 	}
-	while(1) {
-		getchar();
-		if (list != NULL) {
-			printf("%s\n%ld", list->name, list->type); 
-			list = list->next;
-		}
+	processServer(queues);
+	for (i = 0; i < countQueue; i++) {
+		msgctl(queues[i].msqId, IPC_RMID, NULL);
 	}
-	msgctl(serverMsq, IPC_RMID, NULL);
-	msgctl(clientsMsq, IPC_RMID, NULL);
+	free(queues);
 	exit(EXIT_SUCCESS);
 }

@@ -1,3 +1,4 @@
+#include <string.h>
 #include "../include/list.h"
 
 List *initList(long type, char *string) {
@@ -5,7 +6,7 @@ List *initList(long type, char *string) {
 	
 	list = malloc(sizeof(List));
 	list->type = type;
-	list->name = string;
+	memcpy(list->name, string, strlen(string));
 	list->next = NULL;
 	
 	return list;
@@ -17,24 +18,46 @@ List *addElem(long type, char *string, List *list) {
 	temp = malloc(sizeof(List));
 	p = list->next;
 	list->next = temp;
-	temp->name = string;
+	memcpy(temp->name, string, strlen(string));
 	temp->type = type;
 	temp->next = p;
 	
 	return temp;
 }
 
-List *delElem(List *list, List *root) {
-	List *temp;
+void delElem(List *elem, List **head) {
+	List *temp, *next;
+	 
+	temp = *head; 
+    if(temp == elem) {
+        *head = temp->next; 
+        free(temp);
+        return;
+    }
+    
+    while(temp->next != NULL && temp->next != elem)
+        temp = temp->next;
+ 
+    if(temp->next == NULL) {
+        return;
+    }
+ 
+    next = temp->next->next;
+    free(temp->next);
+    temp->next = next;
+}
+
+List *searchElem(long type, List *head) {
+	List *list = NULL;
 	
-	temp = root;
-	while (temp->next != list) {
-		temp = temp->next;
+	list = head;
+	while (list != NULL) {
+		if (list->type == type) {
+			return list;
+		}
+		list = list->next;
 	}
-	temp->next = list->next;
-	free(list);
-	
-	return temp;
+	return NULL;
 }
 
 /* Возвращает новый корень списка */

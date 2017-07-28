@@ -1,18 +1,25 @@
 #include "../include/chat.h"
 
-int main() {
-	const char *fileName = "./server";	
-	struct msgServer msg;
-	int msqId = 0;
-	key_t key = 0;
+int main(int argc, char *argv[]) {
+	char *nameClient = NULL;
+	int count = 3;
+	struct queueId *queues;
+	long type = 0L;
 	
-	key = ftok(fileName, 'S');
-	msqId = msgget(key, 0666);
-	msg.type = 1L;
-	msg.pid = getpid();
-	sprintf(msg.hello, "HELLO");
-	msgsnd(msqId, &msg, sizeof(struct msgServer), IPC_NOWAIT);
-	/*msgrcv(msqId, &msg, sizeof(struct msgServer), book.type, 0); 
-	printf("message = %s\n", book.str);*/
+	queues = malloc(sizeof(struct queueId) * count);
+	
+	if (argc < 2) {
+		printf("Please input name\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	nameClient = argv[1];
+	type = (long) getpid();
+	printf("type = %ld\n", type);
+	
+	connectToServer(count, queues, nameClient, type);
+	processClient(queues, type, nameClient);
+	disconnectClient(queues, nameClient, type);
+	
 	exit(EXIT_SUCCESS);
 }

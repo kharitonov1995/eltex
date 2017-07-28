@@ -17,17 +17,39 @@
 
 #ifndef CHAT_H
 #define CHAT_H
+#define HELLO_SERV 1L
+#define HELLO_CLIENT 2L
+#define CLOSE_SERV 3L
+#define CLOSE_CLIENT 4L
+#define GET_CLIENTS 5L
+
+extern List *head;
+extern pthread_mutex_t mutex;
+
+struct queueId {
+	key_t key;
+	int msqId;
+};
 
 struct msgServer {
 	long type;
-	int pid;
+	int typeClient;
+	int connect;
+	int countClients;
 	char hello[32];
 };
 
-int createServer(int*, int*, List**);
+struct msgClient {
+	long type;
+	char message[255];
+};
+
+int createServer(int, struct queueId[]);
 void *listenConnection(void*);
-pid_t connectToServer(int*);
-void processClient(int, int);
-int processServer(int);
+void *listenConnectionClient(void*);
+int connectToServer(int, struct queueId[], char*, long);
+void disconnectClient(struct queueId[], char*, long);
+void processClient(struct queueId[], long, char*);
+int processServer(struct queueId[]);
 char *getCurrentTime();
 #endif
