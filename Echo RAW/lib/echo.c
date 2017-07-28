@@ -5,7 +5,7 @@ int sizeBuf = 64;
 int createServerUDP(struct sockaddr_in *addrServer) {
 	int sock = 0;
 	socklen_t size = sizeof(*addrServer);
-	
+
 	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock < 0) {
 		perror("socket()");
@@ -15,43 +15,43 @@ int createServerUDP(struct sockaddr_in *addrServer) {
 	addrServer->sin_family = AF_INET;
 	addrServer->sin_port = htons(PORT_SERVER);
 	addrServer->sin_addr.s_addr = htonl(INADDR_ANY);
-	
+
 	if (bind(sock, addrServer, size) < 0) {
 		perror("bind()");
 		return -1;
 	}
-	
+
 	return sock;
 }
 
 int createSocketRaw(struct sockaddr_in *addrServer) {
 	int sock = 0;
-	
+
 	sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
 	if(sock < 0) {
 		perror("socket()");
 		return -1;
 	}
-	
+
 	addrServer->sin_family = AF_INET; 
 	addrServer->sin_port = htons(PORT); 
 	addrServer->sin_addr.s_addr = inet_addr(IP_ADDRD);
-	
+
 	return sock;
 }
 
 void addUdpHeader(unsigned char *buffer) {
 	struct udphdr *udph = NULL;
-	
+
 	udph = malloc(sizeof(struct udphdr));
-	
+
 	bzero(udph, sizeof(struct udphdr));
 		
 	udph->source = htons(CLIENT_PORT);
 	udph->dest = htons(PORT);
 	udph->len = htons(sizeof(struct udphdr*) + sizeBuf);
 	udph->check = 0;
-	
+
 	memcpy(buffer, udph, sizeof(struct udphdr));
 	free(udph);
 }
@@ -59,7 +59,7 @@ void addUdpHeader(unsigned char *buffer) {
 int addIpHeader(int sock, unsigned char *buffer) {
 	int status = 0, flag = 1;
 	struct iphdr *iph = NULL;
-	
+
 	if (sock > 0) {
 		status = setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &flag, sizeof(flag));
 		if(status < 0) {
@@ -67,23 +67,23 @@ int addIpHeader(int sock, unsigned char *buffer) {
 			return -1;
 		}
 	}
-	
+
 	iph = malloc(sizeof(struct iphdr));
 	bzero(iph, sizeof(struct iphdr));
-	
+
 	iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + sizeBuf);
-    iph->id = htons(12345);
-    iph->frag_off = 0;
-    iph->ttl = 255;
-    iph->protocol = IPPROTO_UDP;
-    iph->check = 0;
-    iph->saddr = inet_addr(IP_ADDRS);
-    iph->daddr = inet_addr(IP_ADDRD);
+	iph->version = 4;
+	iph->tos = 0;
+	iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + sizeBuf);
+	iph->id = htons(12345);
+	iph->frag_off = 0;
+	iph->ttl = 255;
+	iph->protocol = IPPROTO_UDP;
+	iph->check = 0;
+	iph->saddr = inet_addr(IP_ADDRS);
+	iph->daddr = inet_addr(IP_ADDRD);
 		
-    iph->check = checkSum((unsigned short*) iph, sizeof(struct iphdr));
+	iph->check = checkSum((unsigned short*) iph, sizeof(struct iphdr));
 	memcpy(buffer, iph, sizeof(struct iphdr));
 	free(iph);
 	return 0;
@@ -276,12 +276,31 @@ int clientRawEthernet() {
 			return -1;
 		}
 		
-		memcpy(iph, buffer, sizeof(struct iphdr));
+		memcpy(eh, buffer, sizeof(struct ethhdr));
+		memcpy(iph, buffer + sizeof(struct ethhdr), sizeof(struct iphdr));
 		memcpy(udph,
 			buffer + sizeof(struct iphdr) + sizeof(struct ethhdr),
 			sizeof(struct udphdr));
 	} while(CLIENT_PORT != ntohs(udph->dest));
-
+	
+	serverIp.s_addr = iph->saddr;
+	
+	printf("\nEthernet Header\n");
+	printf("   |-Destination Address: %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", 
+			eh->h_dest[0], 
+			eh->h_dest[1], 
+			eh->h_dest[2], 
+			eh->h_dest[3], 
+			eh->h_dest[4], 
+			eh->h_dest[5]);
+	printf("   |-Source Address      : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", 
+			eh->h_source[0], 
+			eh->h_source[1], 
+			eh->h_source[2],
+			eh->h_source[3], 
+			eh->h_source[4], 
+			eh->h_source[5]);
+	printf("   |-Protocol            : %u \n", (unsigned short) eh->h_proto);
 	printf("\n");
 	printf("IP Header\n");
 	printf("   |-IP Version        : %d\n", (unsigned int) iph->version);
@@ -300,14 +319,12 @@ int clientRawEthernet() {
 	printf("   |-Destination Port : %d\n", ntohs(udph->dest));
 	printf("   |-UDP Length       : %d\n", ntohs(udph->len));
 	printf("   |-UDP Checksum     : %d\n", ntohs(udph->check));
-
-	serverIp.s_addr = iph->saddr;
-
+	
 	printf("Recv %s from %s:%d \n", 
 		buffer + sizeof(struct iphdr) + sizeof(struct udphdr) + sizeof(struct ethhdr), 
 		inet_ntoa(serverIp),
 		ntohs(udph->source));
-	
+		
 	free(eh);
 	free(udph);
 	free(iph);
@@ -317,7 +334,7 @@ int clientRawEthernet() {
 }
 
 unsigned short checkSum(unsigned short *addr, unsigned int count) {
-    unsigned long sum = 0;
+	unsigned long sum = 0;
 
 	while (count > 1) {
 		sum += *addr++;
@@ -325,10 +342,10 @@ unsigned short checkSum(unsigned short *addr, unsigned int count) {
 	}
 
 	if(count > 0) {
-		sum += ((*addr)&htons(0xFF00));
+		sum += ((*addr) & htons(0xFF00));
 	}
 
-	while (sum>>16) {
+	while (sum >> 16) {
 		sum = (sum & 0xffff) + (sum >> 16);
 	}
 
@@ -341,7 +358,7 @@ int listenerUDP(int sock) {
 	int status = 0, sizeBuf = 64;
 	char *buffer;
 	socklen_t sizeAddr;
-	
+
 	sizeAddr = sizeof(client);
 	buffer = calloc(sizeBuf, sizeof(char));
 	while(1) {
@@ -350,15 +367,15 @@ int listenerUDP(int sock) {
 			perror("recvfrom()");
 			return -1;
 		}
-		
+
 		printf("Recv %s from client %s:%d \n", 
 			buffer, 
 			inet_ntoa(client.sin_addr), 
 			ntohs(client.sin_port));
-		
+
 		bzero(buffer, sizeBuf);
 		memcpy(buffer, "HI!", strlen("HI!"));
-		
+
 		status = sendto(sock, buffer, sizeBuf, 0, &client, sizeAddr);
 		if (status < 0) {
 			perror("sendto()");
