@@ -15,7 +15,10 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);			
 		}
 	} else if (typeClient == 3) {
-		clientRawEthernet();
+		status = clientRawEthernet();
+		if (status < 0) {
+			exit(EXIT_FAILURE);
+		}
 	}
 	
 	exit(EXIT_SUCCESS);
