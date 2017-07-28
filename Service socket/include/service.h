@@ -13,7 +13,10 @@
 #include <pthread.h>
 #include <time.h>
 #include <string.h>
-#include <fcntl.h>
+#include <sys/select.h>
+#include <sys/poll.h>
+#include <sys/epoll.h>
+
 
 #ifndef SERVICE_H
 #define SERVICE_H
@@ -38,8 +41,9 @@ int createServerTCP(struct sockaddr_in*);
 int createServerUDP(struct sockaddr_in*, struct queueId[]);
 int connectToServerTCP(struct sockaddr_in*);
 int connectToServerUDP(struct sockaddr_in*, char*);
-int listenerTCP(int, socklen_t);
+int listenerTCP(int);
 int listenerUDP(struct queueId[], int);
+int listenerTCP_UDP(int*, int);
 void *listenerQueue(void*);
 void *threadClient(void*);
 void getCurrentTime(char*, const int);
