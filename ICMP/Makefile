@@ -12,7 +12,7 @@ vpath %.c $(SDIR) : $(LDIR)
 vpath %.o $(SDIR) : $(LDIR)
 vpath %.h $(IDIR)
 
-myPing: $(OBJ)
+mping: $(OBJ)
 		$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS) 
 
 $(OBJ): prepare
@@ -28,4 +28,4 @@ $(SDIR): $(LDIR)
 clean:
 		cd src && $(MAKE) clean
 		cd lib && $(MAKE) clean
-		rm -rf myPing *.o
+		rm -rf mping *.o
