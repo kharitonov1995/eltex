@@ -12,7 +12,8 @@
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
- 
+#include <sys/poll.h>
+
 #ifndef ICMP_H
 #define ICMP_H
 #define IP_ADDR "192.168.0.21"
@@ -23,6 +24,8 @@ extern int sizeBuf;
 
 int createSock();
 int addIpHeader(int, uint32_t, unsigned char *);
-int addIcmpHeader(unsigned char *);
+int addIcmpHeader(unsigned char *, int);
 unsigned short checkSum(unsigned short *, unsigned int);
+int listener(int);
+int pinger(int, uint32_t);
 #endif
